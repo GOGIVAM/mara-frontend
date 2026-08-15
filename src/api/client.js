@@ -1,5 +1,5 @@
 /**
- * Client HTTP MA-RA — aligné sur le backend .NET (MaRa.Api).
+ * Client HTTP MA-RA  aligné sur le backend .NET (MaRa.Api).
  * Routes réelles : /api/auth, /api/users, /api/equipements, /api/gammes,
  * /api/documents, /api/inference, /api/kpi.
  */

@@ -44,7 +44,7 @@ export default function Overview() {
         {tiles.map(({ key, value, label, Icon, tint, color }) => (
           <div key={key} className="card tile">
             <span className="action-icon" style={{ background: tint, color }}><Icon size={16} /></span>
-            <span className="tile-value">{value ?? '—'}</span>
+            <span className="tile-value">{value ?? ''}</span>
             <span className="tile-label">{label}</span>
           </div>
         ))}
@@ -74,7 +74,7 @@ export default function Overview() {
               {usage.length ? (
                 <div className="bars">
                   {usage.map((u) => (
-                    <div key={u.date} className="bar" title={`${u.date} — ${u.count} reconnaissance(s)`}>
+                    <div key={u.date} className="bar" title={`${u.date}  ${u.count} reconnaissance(s)`}>
                       <span style={{ height: `${(u.count / maxUsage) * 100}%` }} />
                       <small>{String(u.date).slice(5)}</small>
                     </div>

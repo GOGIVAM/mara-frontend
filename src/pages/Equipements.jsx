@@ -11,7 +11,7 @@ const EMPTY = {
   marqueur: '', statut: 'actif', description: '',
 };
 
-/** Référentiel équipements — GET/POST/PUT/DELETE /api/equipements. */
+/** Référentiel équipements  GET/POST/PUT/DELETE /api/equipements. */
 export default function Equipements() {
   const { isAdmin } = useAuth();
   const [items, setItems] = useState([]);
@@ -56,7 +56,7 @@ export default function Equipements() {
     <div className="page two-col-wide">
       <section className="card panel">
         <header className="panel-head">
-          <h3>Parc CAMRAIL — 12 classes IA</h3>
+          <h3>Parc CAMRAIL  12 classes IA</h3>
           <div className="filters">
             <input placeholder="Rechercher un code, un marqueur…" value={search}
               onChange={(e) => setSearch(e.target.value)} />
@@ -165,7 +165,7 @@ export default function Equipements() {
                 <div><dt>Code</dt><dd>{selected.code}</dd></div>
                 <div><dt>Classe IA</dt><dd>{classLabel(selected.classe)}</dd></div>
                 <div><dt>Direction</dt><dd>{selected.direction}</dd></div>
-                <div><dt>Marqueur Vuforia</dt><dd>{selected.marqueur || '—'}</dd></div>
+                <div><dt>Marqueur Vuforia</dt><dd>{selected.marqueur || ''}</dd></div>
                 <div><dt>Statut</dt><dd>{STATUT_LABELS[selected.statut] || selected.statut}</dd></div>
                 <div><dt>Gammes rattachées</dt><dd>{selected.nbGammes}</dd></div>
                 <div><dt>Documents</dt><dd>{selected.nbDocuments}</dd></div>

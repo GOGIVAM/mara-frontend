@@ -6,7 +6,7 @@ import { GROUPES, GROUPE_LABELS, timestamp } from '../lib/format.js';
 
 const EMPTY = { userName: '', email: '', password: '', groupe: 'DMAT' };
 
-/** Comptes et habilitations — /api/users (réservé au groupe ADMIN). */
+/** Comptes et habilitations  /api/users (réservé au groupe ADMIN). */
 export default function Users() {
   const [list, setList] = useState([]);
   const [groupe, setGroupe] = useState('');
@@ -15,8 +15,8 @@ export default function Users() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const load = () => api.users(groupe || undefined).then(setList)
-    .catch((e) => setFeedback({ error: e.message }));
+  const load = () => { api.users(groupe || undefined).then(setList)
+    .catch((e) => setFeedback({ error: e.message })); };
 
   useEffect(load, [groupe]);
 

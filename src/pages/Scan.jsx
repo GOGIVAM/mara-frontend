@@ -97,7 +97,7 @@ export default function Scan() {
           <h3>Reconnaissance d'équipement</h3>
           <span className={health && !health.available ? 'kpi-non_atteint' : 'muted'}>
             {health
-              ? health.available ? 'Service d\'inférence disponible' : 'Service d\'inférence indisponible — repli marqueur QR'
+              ? health.available ? 'Service d\'inférence disponible' : 'Service d\'inférence indisponible  repli marqueur QR'
               : 'Vérification du service…'}
           </span>
         </header>
@@ -143,11 +143,11 @@ export default function Scan() {
                   <td>{percent(d.scoreDet)}</td>
                   <td>{percent(d.scoreCls)}</td>
                   <td>{percent(d.scoreSmoothed)}</td>
-                  <td>{d.preActivateVuforia ? 'Pré-activé' : '—'}</td>
+                  <td>{d.preActivateVuforia ? 'Pré-activé' : ''}</td>
                 </tr>
               ))}
               {!(result.detections || []).length && (
-                <tr><td colSpan={6} className="muted">Aucune détection — utilisez le marqueur QR ou la sélection manuelle.</td></tr>
+                <tr><td colSpan={6} className="muted">Aucune détection  utilisez le marqueur QR ou la sélection manuelle.</td></tr>
               )}
             </tbody>
           </table>
@@ -176,7 +176,7 @@ export default function Scan() {
           <select value={manualId} onChange={(e) => setManualId(e.target.value)}>
             <option value="">Choisir un équipement…</option>
             {equipements.map((e) => (
-              <option key={e.id} value={e.id}>{e.code} — {e.designation}</option>
+              <option key={e.id} value={e.id}>{e.code}  {e.designation}</option>
             ))}
           </select>
           {manualId && (
@@ -189,7 +189,7 @@ export default function Scan() {
         <h4>Gammes de la classe reconnue</h4>
         {gammes.map((g) => (
           <div key={g.id} className="detail" style={{ marginBottom: 14 }}>
-            <p className="detail-title">{g.code} — {g.titre}</p>
+            <p className="detail-title">{g.code}  {g.titre}</p>
             <p className="muted">v{g.version} · {g.direction} · {(g.etapes || []).length} étapes</p>
             <ol className="steps">
               {(g.etapes || []).slice(0, 4).map((s) => (

@@ -16,15 +16,15 @@ export const CLASS_LABELS = {
 
 export const CLASSES = Object.keys(CLASS_LABELS);
 
-export const classLabel = (c) => CLASS_LABELS[c] || c || '—';
+export const classLabel = (c) => CLASS_LABELS[c] || c || '';
 
 export const GROUPES = ['DMAT', 'DIF', 'CI', 'CIF', 'ADMIN'];
 
 export const GROUPE_LABELS = {
-  DMAT: 'DMAT — Matériel',
-  DIF: 'DIF — Infrastructure',
-  CI: 'CI — Coordination',
-  CIF: 'CIF — Formation',
+  DMAT: 'DMAT  Matériel',
+  DIF: 'DIF  Infrastructure',
+  CI: 'CI  Coordination',
+  CIF: 'CIF  Formation',
   ADMIN: 'Administration',
 };
 
@@ -81,7 +81,7 @@ export function timestamp(iso) {
 }
 
 export function fileSize(bytes) {
-  if (!bytes && bytes !== 0) return '—';
+  if (!bytes && bytes !== 0) return '';
   if (bytes < 1024) return `${bytes} o`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(0)} Ko`;
   return `${(bytes / 1048576).toFixed(1)} Mo`;

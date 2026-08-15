@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { Clip } from '../components/Icons.jsx';
 import { TYPES_DOCUMENT, TYPE_DOC_LABELS, fileSize, timestamp } from '../lib/format.js';
 
-/** Documents techniques — /api/documents (upload multipart, téléchargement authentifié). */
+/** Documents techniques  /api/documents (upload multipart, téléchargement authentifié). */
 export default function Documents() {
   const { isAdmin } = useAuth();
   const [items, setItems] = useState([]);
@@ -48,7 +48,7 @@ export default function Documents() {
 
   const equipementLabel = (id) => {
     const e = equipements.find((x) => x.id === id);
-    return e ? `${e.code} — ${e.designation}` : '—';
+    return e ? `${e.code}  ${e.designation}` : '';
   };
 
   return (
@@ -85,7 +85,7 @@ export default function Documents() {
                   {d.description && <><br /><span className="muted">{d.description}</span></>}
                 </td>
                 <td><span className="badge">{TYPE_DOC_LABELS[d.typeDocument] || d.typeDocument}</span></td>
-                <td>{d.equipementId ? equipementLabel(d.equipementId) : '—'}</td>
+                <td>{d.equipementId ? equipementLabel(d.equipementId) : ''}</td>
                 <td>{fileSize(d.tailleOctets)}</td>
                 <td className="muted">{timestamp(d.createdAt)}</td>
                 <td>
@@ -118,7 +118,7 @@ export default function Documents() {
               <select value={upload.equipementId}
                 onChange={(e) => setUpload({ ...upload, equipementId: e.target.value })}>
                 <option value="">Aucun</option>
-                {equipements.map((e) => <option key={e.id} value={e.id}>{e.code} — {e.designation}</option>)}
+                {equipements.map((e) => <option key={e.id} value={e.id}>{e.code}  {e.designation}</option>)}
               </select>
             </label>
             <label>Description

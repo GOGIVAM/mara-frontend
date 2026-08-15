@@ -60,7 +60,7 @@ export const Signal = (p) => (<Svg {...p}><path d="M12 20V9" /><circle cx="12" c
 export const Offline = (p) => (
   <Svg {...p}><path d="M5 12.5a4 4 0 0 1 3.6-4A5.5 5.5 0 0 1 19 9.6 3.5 3.5 0 0 1 18.6 16H8a3.5 3.5 0 0 1-3-3.5Z" /><path d="m3 3 18 18" /></Svg>
 );
-/** Logo CAMRAIL (public/logo1.png) — utilisé dans la barre supérieure et à la connexion. */
+/** Logo CAMRAIL (public/logo1.png)  utilisé dans la barre supérieure et à la connexion. */
 export const Logo = ({ height = 26, className = 'brand-logo' }) => (
   <img src="/logo1.png" alt="CAMRAIL" className={className} style={{ height }} />
 );

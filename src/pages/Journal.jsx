@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { CLASSES, classLabel, percent, timestamp } from '../lib/format.js';
 
-/** Journal des interventions — GET /api/kpi/interventions (ADMIN, paginé). */
+/** Journal des interventions  GET /api/kpi/interventions (ADMIN, paginé). */
 export default function Journal() {
   const [state, setState] = useState({ days: 7, classe: '', userId: '', page: 1, pageSize: 25 });
   const [data, setData] = useState(null);
@@ -47,15 +47,15 @@ export default function Journal() {
             {items.map((l) => (
               <tr key={l.id}>
                 <td className="muted">{timestamp(l.debutAt)}</td>
-                <td><span className="badge">{l.userGroupe || '—'}</span></td>
-                <td>{l.classeDetectee ? classLabel(l.classeDetectee) : '—'}</td>
+                <td><span className="badge">{l.userGroupe || ''}</span></td>
+                <td>{l.classeDetectee ? classLabel(l.classeDetectee) : ''}</td>
                 <td>
                   <span className={`score${(l.scoreConfiance || 0) >= 0.7 ? ' score-ok' : ''}`}>
-                    {l.scoreConfiance != null ? percent(l.scoreConfiance) : '—'}
+                    {l.scoreConfiance != null ? percent(l.scoreConfiance) : ''}
                   </span>
                 </td>
                 <td>{l.fallbackQr ? 'Oui' : 'Non'}</td>
-                <td className="muted">{l.sessionId || '—'}</td>
+                <td className="muted">{l.sessionId || ''}</td>
                 <td className="muted">{l.finAt ? timestamp(l.finAt) : 'en cours'}</td>
               </tr>
             ))}

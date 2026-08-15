@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Backend .NET (MaRa.Api) — ajuster le port si nécessaire.
+      // Backend .NET (MaRa.Api)  ajuster le port si nécessaire.
       '/api': { target: 'http://localhost:5080', changeOrigin: true, secure: false },
     },
   },

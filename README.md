@@ -58,6 +58,20 @@ npm run build
 npm run preview -- --host
 ```
 
+## Comptes de test
+
+Le backend .NET crée automatiquement ces comptes au premier démarrage en mode `Development` :
+
+| Utilisateur | Mot de passe | Groupe |
+|---|---|---|
+| `admin` | `Admin@Camrail2025!` | ADMIN |
+| `tech.dmat` | `Tech@Dmat2025!` | DMAT |
+| `chef.dmat` | `Chef@Dmat2025!` | DMAT |
+| `tech.dif` | `Tech@Dif2025!` | DIF |
+| `chef.dif` | `Chef@Dif2025!` | DIF |
+| `coordinateur` | `Coord@CI2025!` | CI |
+| `formateur` | `Form@CIF2025!` | CIF |
+
 ## Dépannage rapide
 
 ### Le frontend ne charge pas l'API
