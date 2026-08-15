@@ -1,56 +1,73 @@
-# MA-RA — Frontend (React + Vite)
+# MA-RA Frontend
 
-Console web CAMRAIL branchée sur le backend .NET **MaRa.Api**
-(`GOGIVAM/ma_ra_backend`, branche `master`). L'application AR embarquée
-(Unity + Vuforia, RealWear Navigator 520) consomme la même API.
+Application web React/Vite du projet CAMRAIL MA-RA. Elle permet d'utiliser les fonctionnalités métier du système : authentification, gestion des équipements, gammes, documents, suivi d'interventions et IA de reconnaissance.
 
-## Écrans et routes API consommées
+## Prérequis
 
-| Route | Écran | Endpoints backend |
-| --- | --- | --- |
-| `/` | Tableau de bord | `GET /api/kpi/dashboard` (ADMIN) — volumétrie référentiel sinon |
-| `/scan` | Reconnaissance | `POST /api/inference`, `GET /api/inference/health`, `GET /api/gammes/by-class/{classe}` |
-| `/equipements` | Parc CAMRAIL | `GET/POST/PUT/DELETE /api/equipements` |
-| `/gammes` | Gammes et étapes | `GET/POST/PUT/DELETE /api/gammes` et `/api/gammes/{id}/etapes` |
-| `/documents` | Documents | `GET/POST/DELETE /api/documents`, `GET /api/documents/{id}/download` |
-| `/journal` | Journal d'interventions | `GET /api/kpi/interventions` (ADMIN, paginé) |
-| `/utilisateurs` | Comptes | `GET/POST /api/users`, `PATCH /{id}/active`, `PATCH /{id}/groupe`, `DELETE /{id}` (ADMIN) |
-
-Authentification : `POST /api/auth/login` (identifiant + mot de passe),
-`POST /api/auth/refresh`, `GET /api/auth/me`, `POST /api/auth/logout`.
-
-## Habilitations
-
-Le backend porte le groupe dans le claim `groupe` : `DMAT`, `DIF`, `CI`, `CIF`, `ADMIN`.
-Les écrans Journal et Utilisateurs, ainsi que les actions de création, modification,
-suppression et téléversement, ne s'affichent que pour le groupe `ADMIN` — le backend
-les refuse de toute façon (403, restitué à l'écran).
+- Node.js 18+
+- npm
+- Un backend .NET démarré sur `http://localhost:5080`
 
 ## Configuration
 
-Copier `.env.example` en `.env` :
+Copier le fichier d'exemple en `.env` :
 
+```bash
+copy .env.example .env
 ```
-VITE_API_URL=https://<votre-backend>/api
+
+Le fichier `.env.example` contient :
+
+```env
+VITE_API_URL=/api
 ```
 
-Sans variable, l'application appelle `/api`, proxifié par Vite vers
-`http://localhost:5080` (voir `vite.config.js`). Le jeton JWT est conservé dans
-`localStorage` sous `mara.token`, le refresh token sous `mara.refresh` ; un 401
-déclenche automatiquement `POST /api/auth/refresh` puis rejoue la requête.
+Cela permet au proxy Vite de rediriger les appels `/api` vers le backend .NET local.
 
-Le backend n'autorise que les origines déclarées dans `Cors:AllowedOrigins`
-(`http://localhost:3000` et `https://mara.camrail.cm` par défaut) : ajoutez-y
-`http://localhost:5173` ou passez par le proxy Vite.
-
-## Démarrage
+## Démarrage en développement
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # bundle de production dans dist/
+npm run dev
 ```
 
-## Comptes de démonstration (seed backend, `SeedDb=true`)
+Le frontend est ensuite disponible sur :
+- http://localhost:5173
 
-`admin`, `tech.dmat`, `chef.dmat`, `tech.dif`, `chef.dif`, `coordinateur`, `formateur`.
+## Construction de production
+
+```bash
+npm run build
+```
+
+Le build est généré dans le dossier `dist/`.
+
+## Aperçu de l'architecture de communication
+
+- Le frontend appelle le backend ASP.NET Core sur `http://localhost:5080`
+- Le backend .NET expose les routes `/api/...`
+- Le proxy Vite redirige `/api` vers le backend si `VITE_API_URL` vaut `/api`
+- Les tokens JWT sont stockés dans le `localStorage` du navigateur
+
+## Commandes utiles
+
+```bash
+npm install
+npm run dev
+npm run build
+npm run preview -- --host
+```
+
+## Dépannage rapide
+
+### Le frontend ne charge pas l'API
+
+Vérifiez que le backend .NET est bien lancé et que le port `5080` est accessible :
+
+```bash
+curl http://localhost:5080/swagger
+```
+
+### Le proxy Vite ne redirige pas les requêtes
+
+Vérifiez le fichier [vite.config.js](vite.config.js) et confirmez que le paramètre `VITE_API_URL` est bien défini.
