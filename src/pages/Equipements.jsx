@@ -56,7 +56,7 @@ export default function Equipements() {
     <div className="page two-col-wide">
       <section className="card panel">
         <header className="panel-head">
-          <h3>Parc CAMRAIL  12 classes IA</h3>
+          <h3>Parc d’équipements  12 classes IA</h3>
           <div className="filters">
             <input placeholder="Rechercher un code, un marqueur…" value={search}
               onChange={(e) => setSearch(e.target.value)} />

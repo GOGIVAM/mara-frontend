@@ -8,6 +8,15 @@ import { SAFETY_CLASS, classLabel, percent } from '../lib/format.js';
  * POST /api/inference (proxy FastAPI), affichage des détections et des boîtes
  * englobantes, repli marqueur QR / sélection manuelle si le service est indisponible.
  */
+/** Images d'exemple générées pour la démo (public/demo/samples). */
+const SAMPLES = import.meta.env.MODE === 'demo' ? [
+  { id: 'aiguillage', label: 'Aiguillage' },
+  { id: 'signal', label: 'Signal' },
+  { id: 'groupe-electrogene', label: 'Groupe électrogène' },
+  { id: 'compresseur', label: 'Compresseur' },
+  { id: 'atelier-vide', label: 'Atelier sans équipement' },
+] : [];
+
 export default function Scan() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -20,6 +29,8 @@ export default function Scan() {
   const [equipements, setEquipements] = useState([]);
   const [manualId, setManualId] = useState('');
   const [gammes, setGammes] = useState([]);
+  const [sample, setSample] = useState(null);
+  const sampleRef = useRef(null);
 
   useEffect(() => {
     api.equipements({ statut: 'actif' }).then(setEquipements).catch(() => {});
@@ -46,6 +57,7 @@ export default function Scan() {
         await videoRef.current.play();
       }
       setStreaming(true);
+      setSample(null);
     } catch {
       setError("Accès à la caméra refusé. Autorisez la caméra ou sélectionnez l'équipement manuellement.");
     }
@@ -57,16 +69,27 @@ export default function Scan() {
     setStreaming(false);
   };
 
+  const pickSample = (s) => {
+    stopCamera();
+    setResult(null); setError('');
+    setSample(s);
+  };
+
   const capture = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    const source = sample ? sampleRef.current : videoRef.current;
+    if (!source || !canvasRef.current) return;
     setBusy(true); setError(''); setResult(null);
+    // Démo : l'API simulée lit l'image d'exemple choisie (aucun modèle n'est exécuté).
+    window.__MARA_SAMPLE__ = sample ? sample.id : null;
 
     // Redimensionnement 640 px + compression JPEG : limite le temps de transfert.
-    const video = videoRef.current;
+    const video = source;
     const canvas = canvasRef.current;
-    const scale = 640 / Math.max(video.videoWidth, 1);
+    const srcW = video.videoWidth || video.naturalWidth || 640;
+    const srcH = video.videoHeight || video.naturalHeight || 480;
+    const scale = 640 / Math.max(srcW, 1);
     canvas.width = 640;
-    canvas.height = Math.round(video.videoHeight * scale) || 480;
+    canvas.height = Math.round(srcH * scale) || 480;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageBase64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
 
@@ -103,9 +126,10 @@ export default function Scan() {
         </header>
 
         <div className="viewfinder">
-          <video ref={videoRef} playsInline muted />
+          <video ref={videoRef} playsInline muted hidden={!!sample} />
+          {sample && <img ref={sampleRef} className="viewfinder-sample" src={`/demo/samples/${sample.id}.svg`} alt={`Image d'exemple : ${sample.label}`} />}
           <canvas ref={canvasRef} hidden />
-          {!streaming && (
+          {!streaming && !sample && (
             <div className="viewfinder-idle">
               <Cube size={28} />
               <p>Activez la caméra pour cadrer l'équipement à identifier.</p>
@@ -119,14 +143,29 @@ export default function Scan() {
         </div>
 
         <div className="scan-actions">
-          {streaming
+          {streaming || sample
             ? <button className="primary-btn" onClick={capture} disabled={busy}>
                 {busy ? 'Analyse en cours…' : "Identifier l'équipement"}
               </button>
             : <button className="primary-btn" onClick={startCamera}>Activer la caméra</button>}
           {streaming && <button className="chip" onClick={stopCamera}>Arrêter</button>}
+          {sample && <button className="chip" onClick={startCamera}>Utiliser la caméra</button>}
           <span className="muted">Session {sessionId}</span>
         </div>
+
+        {SAMPLES.length > 0 && (
+          <div className="samples">
+            <p className="muted">Démo : choisissez une image d'exemple (illustrations générées). Les détections sont simulées, ce n'est pas le modèle entraîné ; une image de la caméra ne produit aucune détection.</p>
+            <div className="samples-grid">
+              {SAMPLES.map((s) => (
+                <button key={s.id} type="button" className="sample-btn" aria-pressed={sample?.id === s.id}
+                  title={s.label} onClick={() => pickSample(s)}>
+                  <img src={`/demo/samples/${s.id}.svg`} alt={s.label} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {error && <p className="scan-error"><Offline size={15} /> {error}</p>}
 

@@ -618,3 +618,19 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 .viewfinder-box span { pointer-events: none; }
+
+/* ── Démo : comptes fictifs et images d'exemple ───────────────────────────── */
+.demo-accounts { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; text-align: left; }
+.demo-accounts p { margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted, #6b6b70); }
+.demo-accounts .chip { text-align: left; }
+.demo-accounts small { color: var(--muted, #6b6b70); line-height: 1.4; }
+.viewfinder img.viewfinder-sample { width: 100%; height: 100%; object-fit: cover; }
+.samples { margin-top: 14px; }
+.samples p { margin: 0 0 8px; font-size: 13px; }
+.samples-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.sample-btn { padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: none; cursor: pointer; }
+.sample-btn img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.sample-btn[aria-pressed="true"], .sample-btn:focus-visible { border-color: var(--accent); outline: none; }
+@media (max-width: 560px) { .samples-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .scan-actions { flex-wrap: wrap; } }
+.two-col-wide > * { min-width: 0; }
+@media (max-width: 560px) { .panel-head { flex-wrap: wrap; gap: 6px; } }

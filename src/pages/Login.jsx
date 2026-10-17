@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Logo } from '../components/Icons.jsx';
 
+/** Comptes fictifs servis par l'API simulée du build de démonstration. */
+const DEMO_ACCOUNTS = [
+  { userName: 'tech.dmat', label: 'Technicien DMAT' },
+  { userName: 'tech.dif', label: 'Technicien DIF' },
+  { userName: 'admin.ci', label: 'Administrateur' },
+];
+
 export default function Login() {
   const { login } = useAuth();
   const [userName, setUserName] = useState('');
@@ -50,10 +57,23 @@ export default function Login() {
           <ul className="login-groupes">
             <li>DMAT</li><li>DIF</li><li>CI</li><li>CIF</li>
           </ul>
+
+          {import.meta.env.MODE === 'demo' && (
+            <div className="demo-accounts" role="group" aria-label="Comptes de démonstration">
+              <p>Comptes de démonstration (fictifs)</p>
+              {DEMO_ACCOUNTS.map((a) => (
+                <button key={a.userName} type="button" className="chip"
+                  onClick={() => { setUserName(a.userName); setPassword('demo'); }}>
+                  <strong>{a.userName}</strong> · {a.label}
+                </button>
+              ))}
+              <small>Simulation pédagogique : les détections sont simulées dans le navigateur, ce n'est pas le modèle entraîné.</small>
+            </div>
+          )}
         </form>
 
         <p className="login-legal">
-          L'accès à la console MA-RA est réservé au personnel habilité de CAMRAIL. Les connexions et
+          L'accès à la console MA-RA est réservé au personnel habilité. Les connexions et
           les actions sont journalisées ; cinq échecs consécutifs verrouillent le compte pendant
           quinze minutes.
         </p>
