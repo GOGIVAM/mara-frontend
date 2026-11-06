@@ -618,3 +618,140 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 .viewfinder-box span { pointer-events: none; }
+
+
+/* ─────────────────────────────────────────────────────────────
+   Révision de l'interface
+   Le rouge CAMRAIL reste pour la marque et le danger.
+   Actions en bleu ardoise, cibles tactiles de 44 px.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --bg: #f3f4f6;
+  --line: #dfe2e6;
+  --line-soft: #eceef1;
+  --ink: #17202b;
+  --ink-2: #3f4a57;
+  --muted: #5b6673;
+  --action: #1f2a37;
+  --action-dark: #0f172a;
+  --action-soft: #e8ecf1;
+  --green: #17734a;
+  --amber: #96600f;
+  --red: #c01f1f;
+  --radius: 10px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+
+body { line-height: 1.5; }
+.muted { font-size: 13px; }
+
+:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+
+.pill, .chip, .primary-btn, .btn-conforme, .btn-ecart, .icon-btn { transition: background-color .15s, color .15s, border-color .15s; }
+.pill, .chip { min-height: 40px; display: inline-flex; align-items: center; }
+.primary-btn { background: var(--action); min-height: 44px; }
+.primary-btn:hover { background: var(--action-dark); }
+.pill-active, .pill-active:hover { background: var(--action); border-color: var(--action); color: #fff; }
+.chip-active { border-color: var(--action); color: #fff; background: var(--action); }
+.login-card input:focus, .form-stack input:focus, .form-stack select:focus, .form-stack textarea:focus { border-color: var(--action); }
+.card { border: 1px solid var(--line); box-shadow: var(--shadow); }
+.table th { color: var(--ink-2); }
+.table tbody tr:hover { background: #f6f7f9; }
+.row-active { background: var(--action-soft) !important; }
+.panel-head h3 { font-size: 16px; }
+
+.badge { background: var(--action-soft); color: var(--ink-2); }
+.badge.statut-actif { background: #e3f3ea; color: var(--green); }
+.badge.statut-maintenance { background: #fbf0dc; color: var(--amber); }
+.badge.statut-reforme { background: var(--action-soft); color: var(--muted); }
+.badge-demo {
+  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 4px;
+  background: #fbf0dc; color: var(--amber); font-size: 11px; font-weight: 700; vertical-align: 1px;
+}
+
+.demo-banner {
+  margin: 16px 0; padding: 10px 14px; border-left: 4px solid var(--amber);
+  background: #fdf6e8; color: #5f3e08; border-radius: var(--radius-sm);
+}
+.demo-entree {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 20px; margin-top: 16px;
+}
+.demo-entree h3 { margin: 0 0 2px; font-size: 16px; }
+.demo-entree p { margin: 0; }
+.demo-entree .primary-btn { margin: 0; padding: 0 18px; display: inline-flex; align-items: center; white-space: nowrap; color: #fff; }
+
+/* Intervention guidée */
+.intervention-debut { max-width: 520px; margin: 40px auto; }
+.intervention-debut h2 { margin: 0 0 4px; font-size: 22px; }
+.intervention-debut form { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.intervention input:not([type=checkbox]):not([type=file]), .intervention textarea {
+  width: 100%; padding: 12px 14px; font: inherit; font-size: 16px; color: var(--ink);
+  border: 1px solid #aab2bd; border-radius: var(--radius-sm); background: #fff;
+}
+.intervention label { font-weight: 600; font-size: 13.5px; }
+.intervention-grille { display: grid; grid-template-columns: minmax(280px, 340px) 1fr; gap: 16px; align-items: start; }
+.intervention-essieu { margin: 0 0 10px; font-size: 16px; }
+.progression { height: 8px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
+.progression span { display: block; height: 100%; background: var(--green); transition: width .2s; }
+.suivi-etapes { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.suivi-etapes li { display: flex; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 13px; color: var(--muted); }
+.suivi-num { font-weight: 700; font-variant-numeric: tabular-nums; }
+.suivi-courante { background: var(--action-soft); color: var(--ink) !important; font-weight: 600; }
+.suivi-conforme { color: var(--green) !important; }
+.suivi-ecart { color: var(--red) !important; font-weight: 600; }
+.etape-courante { display: flex; flex-direction: column; gap: 8px; padding: 22px 24px; border-top-width: 5px; }
+.etape-vert { border-top-color: var(--green); }
+.etape-orange { border-top-color: #d08a1d; }
+.etape-rouge { border-top-color: var(--red); }
+.etape-tete { display: flex; justify-content: space-between; align-items: center; }
+.etape-courante h2 { margin: 2px 0 10px; font-size: 24px; line-height: 1.3; }
+.niveau { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.niveau-vert { background: #e3f3ea; color: var(--green); }
+.niveau-orange { background: #fbf0dc; color: var(--amber); }
+.niveau-rouge { background: #fbe4e4; color: var(--red); }
+.confirmation-securite {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px;
+  background: #fbe4e4; border-radius: var(--radius-sm); color: #7a1414; cursor: pointer;
+}
+.confirmation-securite input { width: 22px; height: 22px; accent-color: var(--red); }
+.mesure { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-bottom: 4px; }
+.mesure p { grid-column: 1 / -1; margin: 0; }
+.etape-actions, .bilan-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.etape-espace { flex: 1; }
+.btn-conforme, .btn-ecart {
+  min-height: 52px; padding: 0 22px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700;
+}
+.btn-conforme { background: var(--green); border: 1px solid var(--green); color: #fff; }
+.btn-conforme:hover { background: #115c3a; }
+.btn-conforme:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ecart { background: #fff; border: 2px solid var(--red); color: var(--red); }
+.btn-ecart:hover { background: #fbe4e4; }
+.bilan h2 { margin: 0 0 4px; font-size: 22px; }
+.bilan-alerte, .bilan-ok { padding: 10px 14px; border-radius: var(--radius-sm); font-weight: 600; }
+.bilan-alerte { background: #fbe4e4; color: #7a1414; }
+.bilan-ok { background: #e3f3ea; color: #0f5234; }
+.resultat { font-weight: 700; }
+.resultat-conforme { color: var(--green); }
+.resultat-ecart { color: var(--red); }
+.resultat-attente { color: var(--muted); }
+.bilan-actions .primary-btn { margin: 0; padding: 0 20px; }
+.bilan-actions input { max-width: 240px; }
+
+@media (max-width: 1240px) {
+  .topbar { flex-wrap: wrap; }
+  .pill-nav { order: 3; width: 100%; overflow-x: auto; }
+}
+@media (max-width: 900px) {
+  .intervention-grille { grid-template-columns: 1fr; }
+  .intervention-grille aside .suivi-etapes { display: none; }
+  .demo-entree { flex-direction: column; align-items: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+@media print {
+  .topbar, .demo-banner, .bilan-actions { display: none; }
+  .card { border: 0; box-shadow: none; }
+}

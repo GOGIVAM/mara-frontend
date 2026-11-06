@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext.jsx';
 import Documents from './pages/Documents.jsx';
 import Equipements from './pages/Equipements.jsx';
 import Gammes from './pages/Gammes.jsx';
+import Intervention from './pages/Intervention.jsx';
 import Journal from './pages/Journal.jsx';
 import Login from './pages/Login.jsx';
 import Overview from './pages/Overview.jsx';
@@ -23,6 +24,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Overview />} />
           <Route path="/scan" element={<Scan />} />
+          <Route path="/intervention" element={<Intervention />} />
           <Route path="/equipements" element={<Equipements />} />
           <Route path="/gammes" element={<Gammes />} />
           <Route path="/documents" element={<Documents />} />

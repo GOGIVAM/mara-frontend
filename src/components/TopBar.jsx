@@ -8,6 +8,7 @@ import { Bell, Gear, Logo } from './Icons.jsx';
 
 const NAV = [
   { to: '/', label: 'Tableau de bord', end: true },
+  { to: '/intervention', label: 'Intervention' },
   { to: '/scan', label: 'Reconnaissance' },
   { to: '/equipements', label: 'Équipements' },
   { to: '/gammes', label: 'Gammes' },

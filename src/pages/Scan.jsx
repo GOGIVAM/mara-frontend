@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import api from '../api/client.js';
+import TitreGamme from '../components/TitreGamme.jsx';
 import { Cube, Offline, Sparkle } from '../components/Icons.jsx';
 import { SAFETY_CLASS, classLabel, percent } from '../lib/format.js';
 
@@ -82,7 +83,8 @@ export default function Scan() {
   // Boîte englobante FastAPI : coordonnées normalisées ou en pixels de la frame 640.
   const boxStyle = (b) => {
     const norm = b.x2 <= 1.5 ? 1 : 640;
-    const x1 = b.x1 / norm, x2 = b.x2 / norm, y1 = b.y1 / norm, y2 = b.y2 / norm;
+    const normY = b.x2 <= 1.5 ? 1 : (canvasRef.current?.height || 640);
+    const x1 = b.x1 / norm, x2 = b.x2 / norm, y1 = b.y1 / normY, y2 = b.y2 / normY;
     return {
       inset: 'auto',
       left: `${x1 * 100}%`, top: `${y1 * 100}%`,
@@ -129,6 +131,12 @@ export default function Scan() {
         </div>
 
         {error && <p className="scan-error"><Offline size={15} /> {error}</p>}
+
+        {result?.pipelineVersion === 'simulation' && (
+          <p className="scan-error">
+            Mode simulation : aucun modèle entraîné. Ces détections sont aléatoires et sans valeur technique.
+          </p>
+        )}
 
         {result && (
           <table className="table" style={{ marginTop: 16 }}>
@@ -189,7 +197,7 @@ export default function Scan() {
         <h4>Gammes de la classe reconnue</h4>
         {gammes.map((g) => (
           <div key={g.id} className="detail" style={{ marginBottom: 14 }}>
-            <p className="detail-title">{g.code}  {g.titre}</p>
+            <p className="detail-title">{g.code}  <TitreGamme titre={g.titre} /></p>
             <p className="muted">v{g.version} · {g.direction} · {(g.etapes || []).length} étapes</p>
             <ol className="steps">
               {(g.etapes || []).slice(0, 4).map((s) => (

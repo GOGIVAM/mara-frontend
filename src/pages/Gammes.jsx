@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Plus } from '../components/Icons.jsx';
+import TitreGamme from '../components/TitreGamme.jsx';
 import {
   CLASSES, DIRECTIONS, SAFETY_CLASS, SAFETY_LABELS, SAFETY_LEVELS, classLabel, timestamp,
 } from '../lib/format.js';
@@ -119,7 +120,7 @@ export default function Gammes() {
             {list.map((g) => (
               <tr key={g.id} className={selectedId === g.id ? 'row-active' : ''} onClick={() => setSelectedId(g.id)}>
                 <td>{g.code}</td>
-                <td>{g.titre}{!g.isActive && <span className="badge" style={{ marginLeft: 6 }}>inactive</span>}</td>
+                <td><TitreGamme titre={g.titre} />{!g.isActive && <span className="badge" style={{ marginLeft: 6 }}>inactive</span>}</td>
                 <td>{classLabel(g.classeEquipement)}</td>
                 <td>{g.direction}</td>
                 <td className="muted">v{g.version}</td>
@@ -191,7 +192,7 @@ export default function Gammes() {
               )}
             </header>
             <div className="detail">
-              <p className="detail-title">{detail.code}  {detail.titre}</p>
+              <p className="detail-title">{detail.code}  <TitreGamme titre={detail.titre} /></p>
               <p className="muted">
                 {classLabel(detail.classeEquipement)} · {detail.direction} · v{detail.version}
                 {detail.isActive ? '' : ' · inactive'}

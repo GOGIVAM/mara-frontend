@@ -98,7 +98,7 @@ export default function Equipements() {
                 <td>{e.direction}</td>
                 <td>{e.nbGammes}</td>
                 <td>{e.nbDocuments}</td>
-                <td><span className="badge">{STATUT_LABELS[e.statut] || e.statut}</span></td>
+                <td><span className={`badge statut-${e.statut}`}>{STATUT_LABELS[e.statut] || e.statut}</span></td>
               </tr>
             ))}
             {!visible.length && <tr><td colSpan={7} className="muted">Aucun équipement.</td></tr>}

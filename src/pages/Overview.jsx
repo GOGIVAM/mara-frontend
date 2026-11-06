@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Chart, Cube, Offline, Signal, Wrench } from '../components/Icons.jsx';
@@ -30,16 +31,23 @@ export default function Overview() {
   const maxUsage = Math.max(1, ...usage.map((u) => u.count));
 
   const tiles = [
-    { key: 'equipements', value: referentiel.totalEquipements, label: 'Équipements référencés', Icon: Cube, tint: '#FDECEA', color: '#E10600' },
-    { key: 'gammes', value: referentiel.totalGammes, label: 'Gammes actives', Icon: Wrench, tint: '#F1F0F0', color: '#4A4A4D' },
-    { key: 'documents', value: referentiel.totalDocuments, label: 'Documents publiés', Icon: Chart, tint: '#F1F0F0', color: '#4A4A4D' },
-    { key: 'interventions', value: data?.totalInterventions, label: `Reconnaissances sur ${days} j`, Icon: Signal, tint: '#FDECEA', color: '#E10600' },
-    { key: 'score', value: data ? percent(data.avgScoreConfiance) : undefined, label: 'Score de confiance moyen', Icon: Chart, tint: '#F1F0F0', color: '#4A4A4D' },
-    { key: 'fallback', value: data ? percent(data.fallbackQrRate) : undefined, label: 'Taux de repli marqueur QR', Icon: Offline, tint: '#FDECEA', color: '#E10600' },
+    { key: 'equipements', value: referentiel.totalEquipements, label: 'Équipements référencés', Icon: Cube, tint: '#EEF1F4', color: '#1F2A37' },
+    { key: 'gammes', value: referentiel.totalGammes, label: 'Gammes actives', Icon: Wrench, tint: '#EEF1F4', color: '#1F2A37' },
+    { key: 'documents', value: referentiel.totalDocuments, label: 'Documents publiés', Icon: Chart, tint: '#EEF1F4', color: '#1F2A37' },
+    { key: 'interventions', value: data?.totalInterventions, label: `Reconnaissances sur ${days} j`, Icon: Signal, tint: '#EEF1F4', color: '#1F2A37' },
+    { key: 'score', value: data ? percent(data.avgScoreConfiance) : undefined, label: 'Score de confiance moyen', Icon: Chart, tint: '#EEF1F4', color: '#1F2A37' },
+    { key: 'fallback', value: data ? percent(data.fallbackQrRate) : undefined, label: 'Taux de repli marqueur QR', Icon: Offline, tint: '#EEF1F4', color: '#1F2A37' },
   ];
 
   return (
     <div className="page">
+      <section className="card demo-entree">
+        <div>
+          <h3>Parcours de démonstration : visite d'un essieu T17</h3>
+          <p className="muted">Gamme guidée, mesures confirmées, écarts tracés, compte rendu signé.</p>
+        </div>
+        <Link className="primary-btn" to="/intervention">Ouvrir la visite</Link>
+      </section>
       <div className="tiles">
         {tiles.map(({ key, value, label, Icon, tint, color }) => (
           <div key={key} className="card tile">
