@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { ChampFichier, Coche, RailProgression } from '../components/Animations.jsx';
 import TitreGamme from '../components/TitreGamme.jsx';
 import { SAFETY_CLASS, SAFETY_LABELS, timestamp } from '../lib/format.js';
+import { ajouterEnvoi, compresserPhoto, garderPhoto, synchroniser } from '../lib/offline.js';
 
 const CODE_GAMME = 'GESS-T17-DEMO';
 const CLE_GAMME = 'mara.demo.t17.gamme';
@@ -18,6 +21,9 @@ const ecrire = (cle, valeur) => {
   } catch { /* stockage indisponible : l'écran reste utilisable */ }
 };
 const estMesure = (etape) => /^Mesurer/i.test(etape.description);
+const nouvelId = () => (crypto.randomUUID ? crypto.randomUUID()
+  : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) => (
+    (Number(c) ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(c) / 4)))).toString(16))));
 
 /** Exécution guidée d'une visite d'essieu T17 : démonstration sans valeur technique. */
 export default function Intervention() {
@@ -26,6 +32,8 @@ export default function Intervention() {
   const [suivi, setSuivi] = useState(() => lire(CLE_SUIVI));
   const [erreur, setErreur] = useState('');
   const [numero, setNumero] = useState('');
+  const [recentes, setRecentes] = useState([]);
+  const [historique, setHistorique] = useState(null);
 
   useEffect(() => {
     api.gammes()
@@ -40,6 +48,16 @@ export default function Intervention() {
 
   useEffect(() => { ecrire(CLE_SUIVI, suivi); }, [suivi]);
 
+  useEffect(() => {
+    if (suivi) return;
+    api.visites().then((l) => setRecentes(l.slice(0, 5))).catch(() => {});
+  }, [suivi]);
+
+  useEffect(() => {
+    if (!suivi?.essieu) { setHistorique(null); return; }
+    api.visites({ numeroEssieu: suivi.essieu }).then(setHistorique).catch(() => setHistorique(null));
+  }, [suivi?.essieu]);
+
   const etapes = useMemo(
     () => [...(gamme?.etapes || [])].sort((a, b) => a.ordreIndex - b.ordreIndex),
     [gamme],
@@ -50,18 +68,20 @@ export default function Intervention() {
 
   return (
     <div className="page intervention">
-      <p className="demo-banner">
-        <strong>Démonstration.</strong> Déroulé type sans valeur technique. Les cotes seront celles de
-        la gamme validée par CAMRAIL. Les données restent sur cet appareil.
-      </p>
+      {gamme.statut !== 'VALIDEE' && (
+        <p className="demo-banner">
+          <strong>Gamme non validée.</strong> Déroulé type sans valeur technique, à valider par CAMRAIL
+          avant tout usage réel.
+        </p>
+      )}
 
       {!suivi && (
-        <section className="card panel intervention-debut">
+        <motion.section className="card panel intervention-debut" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <h2>Visite d'un essieu T17</h2>
           <p className="muted"><TitreGamme titre={gamme.titre} /> · version {gamme.version} · {etapes.length} étapes</p>
           <form onSubmit={(e) => {
             e.preventDefault();
-            setSuivi({ essieu: numero.trim(), debut: new Date().toISOString(), index: 0, reponses: {} });
+            setSuivi({ id: nouvelId(), essieu: numero.trim(), debut: new Date().toISOString(), index: 0, reponses: {} });
           }}>
             <label htmlFor="numero-essieu">Numéro de l'essieu</label>
             <input id="numero-essieu" required value={numero} autoComplete="off"
@@ -69,21 +89,37 @@ export default function Intervention() {
               onChange={(e) => setNumero(e.target.value)} />
             <button className="primary-btn">Démarrer la visite</button>
           </form>
-        </section>
+          {recentes.length > 0 && (
+            <>
+              <h3 className="visites-titre">Dernières visites enregistrées</h3>
+              <ul className="visites-liste">
+                {recentes.map((v) => (
+                  <li key={v.id}>
+                    <strong>{v.numeroEssieu}</strong>
+                    <span className="muted">{timestamp(v.clotureAt)} · {v.signataire}</span>
+                    <span className={`resultat resultat-${v.nombreEcarts ? 'ecart' : 'conforme'}`}>
+                      {v.nombreEcarts ? `${v.nombreEcarts} écart(s)` : 'Sans écart'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </motion.section>
       )}
 
       {suivi && !suivi.cloture && suivi.index < etapes.length && (
-        <Execution key={etapes[suivi.index].id} etapes={etapes} suivi={suivi} setSuivi={setSuivi} />
+        <Execution key={etapes[suivi.index].id} etapes={etapes} suivi={suivi} setSuivi={setSuivi} historique={historique} />
       )}
 
       {suivi && (suivi.cloture || suivi.index >= etapes.length) && (
-        <Bilan etapes={etapes} suivi={suivi} setSuivi={setSuivi} operateur={user?.userName} />
+        <Bilan etapes={etapes} suivi={suivi} setSuivi={setSuivi} operateur={user?.userName} gamme={gamme} />
       )}
     </div>
   );
 }
 
-function Execution({ etapes, suivi, setSuivi }) {
+function Execution({ etapes, suivi, setSuivi, historique }) {
   const etape = etapes[suivi.index];
   const existante = suivi.reponses[etape.id] || {};
   const [note, setNote] = useState(existante.note || '');
@@ -109,6 +145,7 @@ function Execution({ etapes, suivi, setSuivi }) {
     setSuivi({
       ...suivi,
       index: suivi.index + 1,
+      sens: 1,
       reponses: {
         ...suivi.reponses,
         [etape.id]: { resultat, note: note.trim(), mesure: mesure.trim(), photo, heure: new Date().toISOString() },
@@ -120,18 +157,25 @@ function Execution({ etapes, suivi, setSuivi }) {
     <div className="intervention-grille">
       <aside className="card panel">
         <h3 className="intervention-essieu">Essieu {suivi.essieu}</h3>
-        <div className="progression" role="progressbar" aria-label="Avancement de la visite"
-          aria-valuemin={0} aria-valuemax={etapes.length} aria-valuenow={faites}>
-          <span style={{ width: `${(faites / etapes.length) * 100}%` }} />
-        </div>
+        <RailProgression faites={faites} total={etapes.length} sens={suivi.sens ?? 1} />
         <p className="muted">{faites} sur {etapes.length} étapes</p>
+        {historique && (
+          <p className="muted">
+            {historique.length
+              ? `${historique.length} visite(s) précédente(s), dernière le ${timestamp(historique[0].clotureAt)}`
+              : 'Aucune visite précédente enregistrée'}
+          </p>
+        )}
         <ol className="suivi-etapes">
           {etapes.map((e, i) => {
             const r = suivi.reponses[e.id];
             const etat = i === suivi.index ? 'courante' : r ? r.resultat : 'attente';
             return (
               <li key={e.id} className={`suivi-${etat}`}>
-                <span className="suivi-num">{String(e.ordreIndex).padStart(2, '0')}</span>
+                <span className="suivi-num">
+                  {r && i !== suivi.index ? <Coche animee={i === suivi.index - 1 && (suivi.sens ?? 1) > 0} />
+                    : String(e.ordreIndex).padStart(2, '0')}
+                </span>
                 <span>{e.description}</span>
               </li>
             );
@@ -139,7 +183,9 @@ function Execution({ etapes, suivi, setSuivi }) {
         </ol>
       </aside>
 
-      <section className={`card panel etape-courante etape-${SAFETY_CLASS[etape.niveauSecurite] || 'vert'}`}>
+      <motion.section className={`card panel etape-courante etape-${SAFETY_CLASS[etape.niveauSecurite] || 'vert'}`}
+        initial={{ opacity: 0, x: 36 * (suivi.sens ?? 1) }} animate={{ opacity: 1, x: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
         <div className="etape-tete">
           <span className="muted">Étape {suivi.index + 1} sur {etapes.length}</span>
           <span className={`niveau niveau-${SAFETY_CLASS[etape.niveauSecurite] || 'vert'}`}>
@@ -175,31 +221,74 @@ function Execution({ etapes, suivi, setSuivi }) {
           placeholder="Obligatoire en cas d'écart" />
 
         <label htmlFor="photo-etape">Photo (facultative)</label>
-        <input id="photo-etape" type="file" accept="image/*" capture="environment"
-          onChange={(e) => setPhoto(e.target.files?.[0]?.name || '')} />
+        <ChampFichier id="photo-etape" libelle="Prendre ou choisir une photo" accept="image/*" capture="environment"
+          onChange={async (e) => {
+            const fichier = e.target.files?.[0];
+            if (!fichier) return;
+            try {
+              await garderPhoto(`${suivi.id}:${etape.id}`, await compresserPhoto(fichier));
+              setPhoto(fichier.name);
+            } catch (err) { setMessage(err.message); }
+          }} />
         {photo && <p className="muted">Photo sélectionnée : {photo}</p>}
 
-        {message && <p className="scan-error" role="alert">{message}</p>}
+        {message && (
+          <motion.p key={message} className="scan-error" role="alert"
+            animate={{ x: [0, -7, 7, -4, 4, 0] }} transition={{ duration: 0.32 }}>{message}</motion.p>
+        )}
 
         <div className="etape-actions">
           <button className="chip" disabled={suivi.index === 0}
-            onClick={() => setSuivi({ ...suivi, index: suivi.index - 1 })}>Étape précédente</button>
+            onClick={() => setSuivi({ ...suivi, index: suivi.index - 1, sens: -1 })}>Étape précédente</button>
           <span className="etape-espace" />
           <button className="btn-ecart" onClick={() => enregistrer('ecart')}>Écart ou doute</button>
           <button className="btn-conforme" onClick={() => enregistrer('conforme')}>Étape conforme</button>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 }
 
-function Bilan({ etapes, suivi, setSuivi, operateur }) {
+function Bilan({ etapes, suivi, setSuivi, operateur, gamme }) {
   const [signature, setSignature] = useState(operateur || '');
+
+  const cloturer = async () => {
+    const cloture = new Date().toISOString();
+    await ajouterEnvoi({
+      id: suivi.id,
+      numeroEssieu: suivi.essieu,
+      gammeId: gamme.id,
+      gammeVersion: gamme.version,
+      debutAt: suivi.debut,
+      clotureAt: cloture,
+      signataire: signature.trim(),
+      etapes: etapes.filter((e) => suivi.reponses[e.id]).map((e) => {
+        const r = suivi.reponses[e.id];
+        return {
+          etapeId: e.id,
+          ordre: e.ordreIndex,
+          description: e.description,
+          resultat: r.resultat,
+          mesure: r.mesure || null,
+          note: r.note || null,
+          realiseeAt: r.heure,
+          photo: Boolean(r.photo),
+        };
+      }),
+    });
+    setSuivi({ ...suivi, cloture, signataire: signature.trim() });
+    synchroniser();
+  };
   const ecarts = etapes.filter((e) => suivi.reponses[e.id]?.resultat === 'ecart');
 
   return (
-    <section className="card panel bilan">
+    <motion.section className="card panel bilan" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
       <h2>Compte rendu de l'essieu {suivi.essieu}</h2>
+      {suivi.cloture && (
+        <motion.div className="tampon" initial={{ opacity: 0, scale: 1.7, rotate: -18 }}
+          animate={{ opacity: 1, scale: 1, rotate: -8 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 18 }}>Signé</motion.div>
+      )}
       <p className="muted">
         Début : {timestamp(suivi.debut)}
         {suivi.cloture && ` · Clôture : ${timestamp(suivi.cloture)} · Signé par ${suivi.signataire}`}
@@ -240,7 +329,7 @@ function Bilan({ etapes, suivi, setSuivi, operateur }) {
             <label htmlFor="signature">Signature de l'opérateur</label>
             <input id="signature" value={signature} onChange={(e) => setSignature(e.target.value)} />
             <button className="btn-conforme" disabled={!signature.trim()}
-              onClick={() => setSuivi({ ...suivi, cloture: new Date().toISOString(), signataire: signature.trim() })}>
+              onClick={cloturer}>
               Signer et clôturer
             </button>
           </>
@@ -252,6 +341,6 @@ function Bilan({ etapes, suivi, setSuivi, operateur }) {
           </>
         )}
       </div>
-    </section>
+    </motion.section>
   );
 }

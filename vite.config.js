@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       // Backend .NET (MaRa.Api)  ajuster le port si nécessaire.
       '/api': { target: 'http://localhost:5080', changeOrigin: true, secure: false },
+      '/ws': { target: 'ws://localhost:8000', ws: true },
     },
   },
 });

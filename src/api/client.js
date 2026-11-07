@@ -116,6 +116,14 @@ export const api = {
   updateEtape: (gammeId, etapeId, body) => request(`/gammes/${gammeId}/etapes/${etapeId}`, { method: 'PUT', body }),
   deleteEtape: (gammeId, etapeId) => request(`/gammes/${gammeId}/etapes/${etapeId}`, { method: 'DELETE' }),
 
+  validerGamme: (id, body) => request(`/gammes/${id}/valider`, { method: 'POST', body }),
+
+  ticketAssistance: (salle) => request('/assistance/ticket', { method: 'POST', body: { salle } }),
+
+  // ── Visites d'essieu ──
+  envoyerVisite: (body) => request('/visites', { method: 'POST', body }),
+  visites: (filters) => request(`/visites${qs(filters)}`),
+
   // ── Documents ──────────────────────────────────────────────────────────
   documents: (filters) => request(`/documents${qs(filters)}`),
   uploadDocument: (file, { typeDocument, equipementId, description }) => {

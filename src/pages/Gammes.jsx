@@ -118,9 +118,10 @@ export default function Gammes() {
           </thead>
           <tbody>
             {list.map((g) => (
-              <tr key={g.id} className={selectedId === g.id ? 'row-active' : ''} onClick={() => setSelectedId(g.id)}>
+              <tr key={g.id} className={selectedId === g.id ? 'row-active' : ''} tabIndex={0} onClick={() => setSelectedId(g.id)}
+                onKeyDown={(ev) => { if (ev.key === 'Enter') (() => setSelectedId(g.id))(); }}>
                 <td>{g.code}</td>
-                <td><TitreGamme titre={g.titre} />{!g.isActive && <span className="badge" style={{ marginLeft: 6 }}>inactive</span>}</td>
+                <td><TitreGamme titre={g.titre} />{!g.isActive && <span className="badge" style={{ marginLeft: 6 }}>inactive</span>}{g.statut === 'VALIDEE' && <span className="badge statut-actif" style={{ marginLeft: 6 }}>Validée</span>}{g.statut === 'EXPIREE' && <span className="badge statut-maintenance" style={{ marginLeft: 6 }}>Expirée</span>}</td>
                 <td>{classLabel(g.classeEquipement)}</td>
                 <td>{g.direction}</td>
                 <td className="muted">v{g.version}</td>
@@ -162,7 +163,7 @@ export default function Gammes() {
                 <select value={gammeForm.equipementId || ''}
                   onChange={(e) => setGammeForm({ ...gammeForm, equipementId: e.target.value })}>
                   <option value="">Aucun</option>
-                  {equipements.map((e) => <option key={e.id} value={e.id}>{e.code}  {e.designation}</option>)}
+                  {equipements.map((e) => <option key={e.id} value={e.id}>{e.code} · {e.designation}</option>)}
                 </select>
               </label>
               <label className="check">
@@ -192,11 +193,30 @@ export default function Gammes() {
               )}
             </header>
             <div className="detail">
-              <p className="detail-title">{detail.code}  <TitreGamme titre={detail.titre} /></p>
+              <p className="detail-title">{detail.code} · <TitreGamme titre={detail.titre} /></p>
               <p className="muted">
                 {classLabel(detail.classeEquipement)} · {detail.direction} · v{detail.version}
                 {detail.isActive ? '' : ' · inactive'}
               </p>
+              <p className="muted">
+                {detail.statut === 'VALIDEE'
+                  ? `Validée par ${detail.validePar} · source : ${detail.sourceDocument}`
+                  : detail.statut === 'EXPIREE' ? 'Validation expirée' : 'Brouillon : à valider avant usage'}
+              </p>
+              {isAdmin && detail.statut !== 'VALIDEE' && (
+                <form className="validation-gamme" onSubmit={async (e) => {
+                  e.preventDefault();
+                  const source = new FormData(e.currentTarget).get('source');
+                  try {
+                    setDetail(await api.validerGamme(detail.id, { sourceDocument: source }));
+                    setFeedback({ ok: 'Gamme validée.' });
+                  } catch (err) { setFeedback({ error: err.message }); }
+                }}>
+                  <input name="source" required maxLength={200} aria-label="Document source"
+                    placeholder="Document source CAMRAIL et page" />
+                  <button className="chip">Valider</button>
+                </form>
+              )}
 
               <div className="panel-head" style={{ marginTop: 14 }}>
                 <h4>Étapes ({(detail.etapes || []).length})</h4>

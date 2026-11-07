@@ -21,10 +21,10 @@ export const classLabel = (c) => CLASS_LABELS[c] || c || '';
 export const GROUPES = ['DMAT', 'DIF', 'CI', 'CIF', 'ADMIN'];
 
 export const GROUPE_LABELS = {
-  DMAT: 'DMAT  Matériel',
-  DIF: 'DIF  Infrastructure',
-  CI: 'CI  Coordination',
-  CIF: 'CIF  Formation',
+  DMAT: 'DMAT · Matériel',
+  DIF: 'DIF · Infrastructure',
+  CI: 'CI · Coordination',
+  CIF: 'CIF · Formation',
   ADMIN: 'Administration',
 };
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import api from '../api/client.js';
+import { ChampFichier } from '../components/Animations.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Clip } from '../components/Icons.jsx';
 import { TYPES_DOCUMENT, TYPE_DOC_LABELS, fileSize, timestamp } from '../lib/format.js';
@@ -105,9 +106,10 @@ export default function Documents() {
         <header className="panel-head"><h3>Téléverser un document</h3></header>
         {isAdmin ? (
           <form className="form-stack" onSubmit={submit}>
-            <label>Fichier (50 Mo maximum)
-              <input type="file" ref={fileRef} required />
-            </label>
+            <div>
+              <span className="champ-titre">Fichier (50 Mo maximum)</span>
+              <ChampFichier id="fichier-document" libelle="Choisir un fichier" inputRef={fileRef} required />
+            </div>
             <label>Type
               <select value={upload.typeDocument}
                 onChange={(e) => setUpload({ ...upload, typeDocument: e.target.value })}>
@@ -118,7 +120,7 @@ export default function Documents() {
               <select value={upload.equipementId}
                 onChange={(e) => setUpload({ ...upload, equipementId: e.target.value })}>
                 <option value="">Aucun</option>
-                {equipements.map((e) => <option key={e.id} value={e.id}>{e.code}  {e.designation}</option>)}
+                {equipements.map((e) => <option key={e.id} value={e.id}>{e.code} · {e.designation}</option>)}
               </select>
             </label>
             <label>Description

@@ -99,7 +99,7 @@ export default function Scan() {
           <h3>Reconnaissance d'équipement</h3>
           <span className={health && !health.available ? 'kpi-non_atteint' : 'muted'}>
             {health
-              ? health.available ? 'Service d\'inférence disponible' : 'Service d\'inférence indisponible  repli marqueur QR'
+              ? health.available ? 'Service disponible' : 'Service indisponible : identifiez l\'équipement par son marqueur'
               : 'Vérification du service…'}
           </span>
         </header>
@@ -107,6 +107,7 @@ export default function Scan() {
         <div className="viewfinder">
           <video ref={videoRef} playsInline muted />
           <canvas ref={canvasRef} hidden />
+          {busy && <span className="viewfinder-balayage" aria-hidden="true" />}
           {!streaming && (
             <div className="viewfinder-idle">
               <Cube size={28} />
@@ -114,8 +115,8 @@ export default function Scan() {
             </div>
           )}
           {(result?.detections || []).map((d, i) => (
-            <div key={i} className="viewfinder-box" style={boxStyle(d.boundingBox)}>
-              <span>{classLabel(d.class)} · {percent(d.scoreFinal)}</span>
+            <div key={i} className={`viewfinder-box${d.aConfirmer ? " viewfinder-doute" : ""}`} style={boxStyle(d.boundingBox)}>
+              <span>{classLabel(d.class)} · {d.aConfirmer ? 'à confirmer' : percent(d.scoreFinal)}</span>
             </div>
           ))}
         </div>
@@ -141,7 +142,7 @@ export default function Scan() {
         {result && (
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
-              <tr><th>Classe</th><th>Score final</th><th>Détection</th><th>Classification</th><th>Lissé</th><th>Vuforia</th></tr>
+              <tr><th>Classe</th><th>Score final</th><th>Détection</th><th>Classification</th><th>Lissé</th><th>État</th></tr>
             </thead>
             <tbody>
               {(result.detections || []).map((d, i) => (
@@ -151,7 +152,7 @@ export default function Scan() {
                   <td>{percent(d.scoreDet)}</td>
                   <td>{percent(d.scoreCls)}</td>
                   <td>{percent(d.scoreSmoothed)}</td>
-                  <td>{d.preActivateVuforia ? 'Pré-activé' : ''}</td>
+                  <td>{d.aConfirmer ? 'À confirmer' : d.preActivateVuforia ? 'Pré-activé' : ''}</td>
                 </tr>
               ))}
               {!(result.detections || []).length && (
@@ -184,12 +185,12 @@ export default function Scan() {
           <select value={manualId} onChange={(e) => setManualId(e.target.value)}>
             <option value="">Choisir un équipement…</option>
             {equipements.map((e) => (
-              <option key={e.id} value={e.id}>{e.code}  {e.designation}</option>
+              <option key={e.id} value={e.id}>{e.code} · {e.designation}</option>
             ))}
           </select>
           {manualId && (
             <p className="muted">
-              Marqueur Vuforia : {equipements.find((e) => e.id === manualId)?.marqueur || 'non défini'}
+              Marqueur : {equipements.find((e) => e.id === manualId)?.marqueur || 'non défini'}
             </p>
           )}
         </div>

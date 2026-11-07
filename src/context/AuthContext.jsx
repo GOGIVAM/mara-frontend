@@ -2,6 +2,11 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import api, { clearTokens, getToken, setTokens } from '../api/client.js';
 
 const AuthContext = createContext(null);
+const CLE_PROFIL = 'mara.profil';
+const garderProfil = (p) => localStorage.setItem(CLE_PROFIL, JSON.stringify(p));
+const lireProfil = () => {
+  try { return JSON.parse(localStorage.getItem(CLE_PROFIL)); } catch { return null; }
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -9,13 +14,22 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!getToken()) { setLoading(false); return; }
-    api.me().then(setUser).catch(() => clearTokens()).finally(() => setLoading(false));
+    api.me()
+      .then((profil) => { garderProfil(profil); setUser(profil); })
+      .catch((e) => {
+        // Sans réseau, le terminal reste utilisable avec le dernier profil connu.
+        const connu = lireProfil();
+        if (e instanceof TypeError && connu) setUser(connu);
+        else clearTokens();
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (userName, password) => {
     const auth = await api.login(userName, password);
     setTokens(auth.accessToken, auth.refreshToken);
     const profile = await api.me();
+    garderProfil(profile);
     setUser(profile);
     return profile;
   };
@@ -23,6 +37,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try { await api.logout(); } catch { /* session déjà close */ }
     clearTokens();
+    localStorage.removeItem(CLE_PROFIL);
     setUser(null);
   };
 

@@ -56,7 +56,7 @@ export default function Equipements() {
     <div className="page two-col-wide">
       <section className="card panel">
         <header className="panel-head">
-          <h3>Parc CAMRAIL  12 classes IA</h3>
+          <h3>Parc d'équipements</h3>
           <div className="filters">
             <input placeholder="Rechercher un code, un marqueur…" value={search}
               onChange={(e) => setSearch(e.target.value)} />
@@ -91,7 +91,8 @@ export default function Equipements() {
           </thead>
           <tbody>
             {visible.map((e) => (
-              <tr key={e.id} className={selected?.id === e.id ? 'row-active' : ''} onClick={() => setSelected(e)}>
+              <tr key={e.id} className={selected?.id === e.id ? 'row-active' : ''} tabIndex={0} onClick={() => setSelected(e)}
+                onKeyDown={(ev) => { if (ev.key === 'Enter') (() => setSelected(e))(); }}>
                 <td>{e.code}</td>
                 <td>{e.designation}</td>
                 <td>{classLabel(e.classe)}</td>
@@ -129,7 +130,7 @@ export default function Equipements() {
                   {DIRECTIONS.map((d) => <option key={d}>{d}</option>)}
                 </select>
               </label>
-              <label>Marqueur Vuforia
+              <label>Marqueur
                 <input maxLength={100} value={form.marqueur || ''}
                   onChange={(e) => setForm({ ...form, marqueur: e.target.value })} />
               </label>
@@ -165,7 +166,7 @@ export default function Equipements() {
                 <div><dt>Code</dt><dd>{selected.code}</dd></div>
                 <div><dt>Classe IA</dt><dd>{classLabel(selected.classe)}</dd></div>
                 <div><dt>Direction</dt><dd>{selected.direction}</dd></div>
-                <div><dt>Marqueur Vuforia</dt><dd>{selected.marqueur || ''}</dd></div>
+                <div><dt>Marqueur</dt><dd>{selected.marqueur || ''}</dd></div>
                 <div><dt>Statut</dt><dd>{STATUT_LABELS[selected.statut] || selected.statut}</dd></div>
                 <div><dt>Gammes rattachées</dt><dd>{selected.nbGammes}</dd></div>
                 <div><dt>Documents</dt><dd>{selected.nbDocuments}</dd></div>
