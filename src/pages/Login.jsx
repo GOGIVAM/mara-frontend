@@ -89,7 +89,7 @@ export default function Login() {
 
         <p className="login-legal">
           Accès réservé au personnel habilité de CAMRAIL (DMAT, DIF, CI, CIF). Les connexions et les
-          actions sont journalisées ; cinq échecs consécutifs verrouillent le compte pendant quinze minutes.
+          actions sont journalisées.
         </p>
       </main>
     </div>
