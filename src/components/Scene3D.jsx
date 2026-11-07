@@ -1,11 +1,17 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const SURBRILLANCE = 0xe10600;
+const VUE = [1.5, 0.7, 2.3];
+const TEINTES = { fusee: 0xc3cad3, portee_intermediaire: 0xa7b0bb, portee_calage: 0x8d97a3, corps: 0x7c8794 };
 
-/** Vue 3D, vide tant qu'aucun modèle n'est chargé. Le fond devient transparent en mode RA pour laisser voir la caméra. */
-const Scene3D = forwardRef(function Scene3D({ organe, eclate, transparent, onSelection }, ref) {
+/**
+ * Vue 3D d'un modèle glTF. Chaque maillage nommé « organe_g » ou « organe_d » devient
+ * sélectionnable sous le nom « organe ». Fond transparent en mode RA pour laisser voir la caméra.
+ */
+const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparent, onSelection, onCharge }, ref) {
   const hote = useRef(null);
   const etat = useRef({});
 
@@ -18,7 +24,7 @@ const Scene3D = forwardRef(function Scene3D({ organe, eclate, transparent, onSel
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(36, 1, 0.01, 50);
-    camera.position.set(2.7, 1.5, 4.5);
+    camera.position.set(...VUE);
     scene.add(new THREE.HemisphereLight(0xffffff, 0x5b6673, 2.1));
     const soleil = new THREE.DirectionalLight(0xffffff, 2.4);
     soleil.position.set(3, 5, 4);
@@ -27,10 +33,28 @@ const Scene3D = forwardRef(function Scene3D({ organe, eclate, transparent, onSel
     const racine = new THREE.Group();
     const pieces = [];
     scene.add(racine);
+    let actif = true;
+    if (modele) {
+      new GLTFLoader().load(modele, (gltf) => {
+        if (!actif) return;
+        gltf.scene.traverse((o) => {
+          if (!o.isMesh) return;
+          const nom = o.name.replace(/_[gd]$/, '');
+          o.geometry.deleteAttribute('color');
+          o.geometry.computeVertexNormals();
+          o.material?.dispose();
+          o.material = new THREE.MeshStandardMaterial({ color: TEINTES[nom] ?? 0x8d97a3, metalness: 0.5, roughness: 0.45 });
+          o.userData = { organe: nom, ecart: 0, xBase: o.position.x };
+          pieces.push(o);
+        });
+        racine.add(gltf.scene);
+        etat.current.onCharge?.(true);
+      }, undefined, () => etat.current.onCharge?.(false));
+    }
 
     const controles = new OrbitControls(camera, renderer.domElement);
     controles.enableDamping = true;
-    controles.minDistance = 1.2;
+    controles.minDistance = 0.4;
     controles.maxDistance = 12;
     controles.autoRotate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     controles.autoRotateSpeed = 0.9;
@@ -83,6 +107,7 @@ const Scene3D = forwardRef(function Scene3D({ organe, eclate, transparent, onSel
     });
 
     return () => {
+      actif = false;
       observateur.disconnect();
       renderer.setAnimationLoop(null);
       controles.dispose();
@@ -90,9 +115,9 @@ const Scene3D = forwardRef(function Scene3D({ organe, eclate, transparent, onSel
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [modele]);
 
-  useEffect(() => { Object.assign(etat.current, { organe, eclate, onSelection }); }, [organe, eclate, onSelection]);
+  useEffect(() => { Object.assign(etat.current, { organe, eclate, onSelection, onCharge }); }, [organe, eclate, onSelection, onCharge]);
 
   useImperativeHandle(ref, () => ({
     /** Échelle et position du modèle sur l'image de la caméra. */
@@ -104,7 +129,7 @@ const Scene3D = forwardRef(function Scene3D({ organe, eclate, transparent, onSel
         etat.current.face = face;
         controles.autoRotate = false;
         controles.enabled = !face;
-        camera.position.set(...(face ? [0, 0, 4.6] : [2.7, 1.5, 4.5]));
+        camera.position.set(...(face ? [0, 0, 2.6] : VUE));
         controles.target.set(0, 0, 0);
       }
       racine.scale.setScalar(echelle);

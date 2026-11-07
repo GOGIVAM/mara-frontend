@@ -4,6 +4,13 @@ import TitreGamme from '../components/TitreGamme.jsx';
 import { Cube, Offline, Sparkle } from '../components/Icons.jsx';
 import { SAFETY_CLASS, classLabel, percent } from '../lib/format.js';
 
+const ORGANES = {
+  roue: 'Roue', boite_essieu: "Boîte d'essieu", axe: 'Axe', semelle_frein: 'Semelle de frein',
+  ressort_lames: 'Ressort à lames', ressort_helicoidal: 'Ressort hélicoïdal', bogie: 'Bogie',
+};
+const MOTEURS = { owlv2: 'OWLv2, description textuelle', entraine: 'Modèle entraîné' };
+const libelle = (d) => (d.organe ? ORGANES[d.organe] || d.organe : classLabel(d.class));
+
 /**
  * Reconnaissance d'équipement : capture caméra, envoi de la frame base64 à
  * POST /api/inference (proxy FastAPI), affichage des détections et des boîtes
@@ -116,7 +123,7 @@ export default function Scan() {
           )}
           {(result?.detections || []).map((d, i) => (
             <div key={i} className={`viewfinder-box${d.aConfirmer ? " viewfinder-doute" : ""}`} style={boxStyle(d.boundingBox)}>
-              <span>{classLabel(d.class)} · {d.aConfirmer ? 'à confirmer' : percent(d.scoreFinal)}</span>
+              <span>{libelle(d)} · {d.aConfirmer ? 'à confirmer' : percent(d.scoreFinal)}</span>
             </div>
           ))}
         </div>
@@ -124,7 +131,7 @@ export default function Scan() {
         <div className="scan-actions">
           {streaming
             ? <button className="primary-btn" onClick={capture} disabled={busy}>
-                {busy ? 'Analyse en cours…' : "Identifier l'équipement"}
+                {busy ? 'Analyse en cours, jusqu’à 30 s…' : "Identifier l'équipement"}
               </button>
             : <button className="primary-btn" onClick={startCamera}>Activer la caméra</button>}
           {streaming && <button className="chip" onClick={stopCamera}>Arrêter</button>}
@@ -133,21 +140,15 @@ export default function Scan() {
 
         {error && <p className="scan-error"><Offline size={15} /> {error}</p>}
 
-        {result?.pipelineVersion === 'simulation' && (
-          <p className="scan-error">
-            Mode simulation : aucun modèle entraîné. Ces détections sont aléatoires et sans valeur technique.
-          </p>
-        )}
-
         {result && (
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
-              <tr><th>Classe</th><th>Score final</th><th>Détection</th><th>Classification</th><th>Lissé</th><th>État</th></tr>
+              <tr><th>Élément</th><th>Score final</th><th>Détection</th><th>Classification</th><th>Lissé</th><th>État</th></tr>
             </thead>
             <tbody>
               {(result.detections || []).map((d, i) => (
                 <tr key={i}>
-                  <td>{classLabel(d.class)}</td>
+                  <td>{libelle(d)}</td>
                   <td><span className={`score${d.scoreFinal >= 0.7 ? ' score-ok' : ''}`}>{percent(d.scoreFinal)}</span></td>
                   <td>{percent(d.scoreDet)}</td>
                   <td>{percent(d.scoreCls)}</td>
@@ -169,11 +170,11 @@ export default function Scan() {
         {result && (
           <div className="detail">
             <p className="detail-title">
-              {best ? classLabel(best.class) : 'Équipement non identifié'}
+              {best ? `${classLabel(best.class)}${best.organe ? ` · ${libelle(best)}` : ''}` : 'Équipement non identifié'}
             </p>
             <dl>
               <div><dt>Latence d'inférence</dt><dd>{Math.round(result.inferenceMs || 0)} ms</dd></div>
-              <div><dt>Version du pipeline</dt><dd>{result.pipelineVersion}</dd></div>
+              <div><dt>Moteur</dt><dd>{MOTEURS[result.pipelineVersion] || result.pipelineVersion}</dd></div>
               <div><dt>Repli marqueur QR</dt><dd>{result.fallbackQrRecommended ? 'Recommandé' : 'Non nécessaire'}</dd></div>
               <div><dt>Session</dt><dd>{result.sessionId}</dd></div>
             </dl>
