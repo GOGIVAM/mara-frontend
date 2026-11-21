@@ -90,7 +90,11 @@ button { font-family: inherit; cursor: pointer; }
 .pill-nav {
   display: flex; align-items: center; gap: 6px; padding: 4px;
   background: #fff; border: 1px solid var(--line); border-radius: 999px;
+  /* Se réduit et défile plutôt que de faire déborder la page (comptes ADMIN). */
+  min-width: 0; overflow-x: auto; scrollbar-width: none;
 }
+.pill-nav::-webkit-scrollbar { display: none; }
+.topbar-left, .topbar-right { flex: none; }
 
 .pill {
   padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 500;
@@ -618,3 +622,61 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 .viewfinder-box span { pointer-events: none; }
+
+/* ── Module essieu T17 : jumeau numérique et mode opératoire ─────────── */
+.two-col-wide > * { min-width: 0; }
+.t17-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.t17-head h3 { margin: 0 0 4px; font-size: 15px; }
+.t17-head p { margin: 0; }
+.t17-head .filters { flex-wrap: wrap; }
+
+.viewer {
+  position: relative; height: 460px; border-radius: var(--radius-sm); overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #ffffff 0%, #ecebeb 75%);
+  touch-action: none;
+}
+.viewer canvas { display: block; width: 100%; height: 100%; }
+.viewer-failed { display: grid; place-items: center; padding: 24px; text-align: center; }
+.viewer-reset { position: absolute; right: 12px; bottom: 12px; }
+.viewer-help { margin: 8px 0 0; }
+
+.marker {
+  position: absolute; left: 0; top: 0; width: 26px; height: 26px; padding: 0;
+  border-radius: 50%; border: 2px solid #fff; background: var(--ink-2); color: #fff;
+  font-size: 11px; font-weight: 700; box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+  transition: background .2s, width .2s, height .2s;
+}
+.marker:hover { background: var(--accent-dark); }
+.marker-active { background: var(--accent); width: 32px; height: 32px; font-size: 12px; }
+.marker-conforme { background: var(--green); }
+.marker-non_conforme { background: var(--red); }
+.marker-active.marker-conforme, .marker-active.marker-non_conforme { outline: 3px solid var(--accent); }
+
+.t17-stepbar { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.t17-current { padding: 4px 0 4px 12px; }
+.t17-current strong { font-size: 15px; }
+.t17-detail { font-size: 12.5px; color: var(--ink-2); background: var(--line-soft); border-radius: 8px; padding: 6px 10px; margin-top: 4px; }
+.t17-stepbar .check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+.t17-stepbar .check input { accent-color: var(--accent); }
+.t17-stepbar .primary-btn { flex: 0 1 180px; }
+.t17-step-active { background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+.steps .step { cursor: pointer; }
+
+.t17-fiche { list-style: none; margin: 14px 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.t17-fiche li {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px;
+}
+.t17-fiche-active { border-color: var(--accent) !important; }
+.t17-fiche .filters { flex-wrap: wrap; }
+.t17-fiche input {
+  padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: 12.5px; outline: none;
+}
+.t17-fiche input:focus { border-color: var(--accent); }
+.t17-mesure { width: 130px; }
+.chip-conforme { border-color: var(--green); color: var(--green); }
+.chip-non_conforme { border-color: var(--red); color: var(--red); }
+
+@media (max-width: 720px) {
+  .viewer { height: 320px; }
+}

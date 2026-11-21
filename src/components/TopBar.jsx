@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { GROUPE_LABELS } from '../lib/format.js';
+import { can } from '../t17/model.js';
 import Avatar from './Avatar.jsx';
 import { Bell, Gear, Logo } from './Icons.jsx';
 
@@ -12,6 +13,7 @@ const NAV = [
   { to: '/equipements', label: 'Équipements' },
   { to: '/gammes', label: 'Gammes' },
   { to: '/documents', label: 'Documents' },
+  { to: '/essieu-t17', label: 'Essieu T17', right: 'view' },
 ];
 
 const ADMIN_NAV = [
@@ -32,7 +34,7 @@ export default function TopBar() {
     return () => clearInterval(id);
   }, []);
 
-  const nav = isAdmin ? [...NAV, ...ADMIN_NAV] : NAV;
+  const nav = (isAdmin ? [...NAV, ...ADMIN_NAV] : NAV).filter((item) => !item.right || can(user?.groupe, item.right));
 
   return (
     <header className="topbar">
