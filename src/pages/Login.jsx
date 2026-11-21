@@ -39,7 +39,9 @@ export default function Login() {
 
           {error && <p className="login-error">{error}</p>}
 
-          <button className="primary-btn" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter'}</button>
+          <button className="primary-btn" disabled={busy}>
+            {busy ? <><span className="spinner spinner-light" /> Connexion…</> : 'Se connecter'}
+          </button>
 
           <p className="login-help">
             Identifiants oubliés ? <strong>Contactez la Coordination Informatique</strong>

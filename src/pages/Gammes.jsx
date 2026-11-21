@@ -101,7 +101,7 @@ export default function Gammes() {
               <option value="false">Toutes</option>
             </select>
             {isAdmin && (
-              <button className="chip chip-active" onClick={() => setGammeForm({ ...EMPTY_GAMME })}>
+              <button className="btn-add" onClick={() => setGammeForm({ ...EMPTY_GAMME })}>
                 <Plus size={13} /> Nouvelle
               </button>
             )}
@@ -190,7 +190,7 @@ export default function Gammes() {
                 </div>
               )}
             </header>
-            <div className="detail">
+            <div className="detail swap" key={detail.id}>
               <p className="detail-title">{detail.code} · {detail.titre}</p>
               <p className="muted">
                 {classLabel(detail.classeEquipement)} · {detail.direction} · v{detail.version}

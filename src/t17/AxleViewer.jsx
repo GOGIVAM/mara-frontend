@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { easeInOutCubic, prefersReducedMotion } from '../lib/motion.js';
 import { CONTROL_POINTS } from './model.js';
 
 /**
@@ -34,12 +35,18 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
       return undefined;
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.prepend(renderer.domElement);
+    const reduced = prefersReducedMotion();
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 50);
     const HOME = { pos: new THREE.Vector3(1.7, 0.95, 2.1), target: new THREE.Vector3(0, 0, 0) };
-    camera.position.copy(HOME.pos);
+    // Arrivée : la caméra part de loin et descend en orbite vers la vue d'ensemble.
+    camera.position.copy(reduced ? HOME.pos : new THREE.Vector3(-2.6, 2.4, 4.6));
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -48,8 +55,15 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
     controls.target.copy(HOME.target);
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8a90, 1.6));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
-    key.position.set(2, 3, 2.5);
+    const key = new THREE.DirectionalLight(0xffffff, 2.4);
+    key.position.set(1.5, 3.2, 2.2);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.camera.left = -1.6; key.shadow.camera.right = 1.6;
+    key.shadow.camera.top = 1.6; key.shadow.camera.bottom = -1.6;
+    key.shadow.camera.near = 0.5; key.shadow.camera.far = 8;
+    key.shadow.radius = 6;
+    key.shadow.bias = -0.0005;
     scene.add(key);
     const rim = new THREE.DirectionalLight(0xffffff, 0.8);
     rim.position.set(-2, 1, -2);
@@ -65,6 +79,8 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
     const add = (parent, part, geometry, mat, setup) => {
       disposables.push(geometry);
       const mesh = new THREE.Mesh(geometry, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       setup?.(mesh);
       parent.add(mesh);
       if (part) (partMeshes[part] ||= []).push(mesh);
@@ -114,19 +130,28 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
         m.position.set(s * 0.535, -0.43 - 0.03 - 0.005, 0);
       });
     });
-    add(scene, null, new THREE.PlaneGeometry(6, 6), material(0xe8e7e7, 0, 1), (m) => {
+    add(scene, null, new THREE.PlaneGeometry(8, 8), material(0xe9eaec, 0, 1), (m) => {
       m.rotation.x = -Math.PI / 2;
       m.position.y = -0.5;
+      m.castShadow = false;
     });
 
-    const tween = { from: null, to: null, t: 1 };
-    const goTo = (pos, target) => {
+    const tween = { from: null, to: null, t: 1, duration: 1 };
+    const goTo = (pos, target, duration = 1.1) => {
       tween.from = { pos: camera.position.clone(), target: controls.target.clone() };
       tween.to = { pos, target };
+      tween.duration = reduced ? 0.001 : duration;
       tween.t = 0;
     };
+    if (!reduced) goTo(HOME.pos.clone(), HOME.target.clone(), 1.8);
 
-    stateRef.current = { HOME, goTo, boxes };
+    // Orbite lente lorsque personne ne manipule la vue d'ensemble.
+    let lastInteraction = performance.now();
+    controls.addEventListener('start', () => { lastInteraction = performance.now(); tween.t = 1; });
+    controls.addEventListener('end', () => { lastInteraction = performance.now(); });
+    controls.autoRotateSpeed = 0.7;
+
+    stateRef.current = { HOME, goTo, boxes, intro: !reduced };
 
     const resize = () => {
       const { clientWidth: w, clientHeight: h } = host;
@@ -142,27 +167,39 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
     const clock = new THREE.Clock();
     const v = new THREE.Vector3();
     let explode = 0;
+    let spin = 0;
+    const glow = Object.fromEntries(Object.keys(partMeshes).map((k) => [k, 0]));
     let frame;
     const loop = () => {
       frame = requestAnimationFrame(loop);
       const dt = Math.min(clock.getDelta(), 0.05);
-      const { animation: anim, highlightPart: hp } = propsRef.current;
+      const { animation: anim, highlightPart: hp, selectedPoint: sp } = propsRef.current;
+      const k = (rate) => (reduced ? 1 : 1 - Math.exp(-rate * dt));
 
-      if (anim === 'rotate') rotating.rotation.x += dt * 1.1;
-      explode += ((anim === 'explode' ? 1 : 0) - explode) * Math.min(1, dt * 5);
+      // Rotation : accélération et freinage progressifs.
+      spin += ((anim === 'rotate' ? 1.25 : 0) - spin) * k(2.5);
+      rotating.rotation.x += spin * dt;
+
+      // Vue éclatée amortie (ressort critique).
+      explode += ((anim === 'explode' ? 1 : 0) - explode) * k(6);
       boxes.forEach((b) => { b.position.x = b.userData.side * (0.78 + explode * 0.3); });
 
+      // Surbrillance en fondu, avec une respiration lente.
       Object.entries(partMeshes).forEach(([part, meshes]) => {
-        const on = part === hp;
+        glow[part] += ((part === hp ? 1 : 0) - glow[part]) * k(7);
+        const g = glow[part] * (0.32 + 0.12 * Math.sin(clock.elapsedTime * 3));
         meshes.forEach((m) => {
-          m.material.emissive.setHex(on ? 0xe10600 : 0x000000);
-          m.material.emissiveIntensity = on ? 0.35 + 0.15 * Math.sin(clock.elapsedTime * 4) : 0;
+          m.material.emissive.setHex(0xe10600);
+          m.material.emissiveIntensity = g;
         });
       });
 
+      controls.autoRotate = !reduced && tween.t >= 1 && anim === 'overview' && !sp
+        && performance.now() - lastInteraction > 4000;
+
       if (tween.t < 1) {
-        tween.t = Math.min(1, tween.t + dt / 0.8);
-        const e = 1 - (1 - tween.t) ** 3;
+        tween.t = Math.min(1, tween.t + dt / tween.duration);
+        const e = easeInOutCubic(tween.t);
         camera.position.lerpVectors(tween.from.pos, tween.to.pos, e);
         controls.target.lerpVectors(tween.from.target, tween.to.target, e);
       }
@@ -179,7 +216,7 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
         if (p.part === 'boite') v.x += Math.sign(v.x) * explode * 0.3;
         v.project(camera);
         const visible = v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
-        el.style.display = visible ? '' : 'none';
+        el.style.visibility = visible ? '' : 'hidden';
         el.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -50%)`;
       });
     };
@@ -201,7 +238,12 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
     const s = stateRef.current;
     if (!s) return;
     const p = CONTROL_POINTS.find((c) => c.id === selectedPoint);
-    if (!p) { s.goTo(s.HOME.pos.clone(), s.HOME.target.clone()); return; }
+    if (!p) {
+      if (s.intro) { s.intro = false; return; } // laisse finir l'arrivée de la caméra
+      s.goTo(s.HOME.pos.clone(), s.HOME.target.clone());
+      return;
+    }
+    s.intro = false;
     const target = new THREE.Vector3(...p.position);
     if (p.part === 'boite' && animation === 'explode') target.x += Math.sign(target.x) * 0.3;
     const dir = new THREE.Vector3(target.x * 0.6, target.y * 0.6 + 0.35, 1).normalize();
@@ -224,15 +266,16 @@ export default function AxleViewer({ selectedPoint, highlightPart, animation = '
 
   return (
     <div className="viewer" ref={hostRef}>
-      {CONTROL_POINTS.map((p) => (
+      {CONTROL_POINTS.map((p, i) => (
         <button
           key={p.id}
+          style={{ '--i': i }}
           ref={(el) => { labelRefs.current[p.id] = el; }}
           className={`marker${selectedPoint === p.id ? ' marker-active' : ''}${statuses[p.id] ? ` marker-${statuses[p.id]}` : ''}`}
           title={p.label}
           onClick={() => onSelectPoint?.(p.id)}
         >
-          {p.id.slice(1)}
+          <span>{p.id.slice(1)}</span>
         </button>
       ))}
       <button className="chip viewer-reset" onClick={resetView}>Vue d'ensemble</button>

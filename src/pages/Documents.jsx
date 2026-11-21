@@ -85,7 +85,7 @@ export default function Documents() {
                   {d.description && <><br /><span className="muted">{d.description}</span></>}
                 </td>
                 <td><span className="badge">{TYPE_DOC_LABELS[d.typeDocument] || d.typeDocument}</span></td>
-                <td>{d.equipementId ? equipementLabel(d.equipementId) : ''}</td>
+                <td>{d.equipementId ? equipementLabel(d.equipementId) : <span className="muted">–</span>}</td>
                 <td>{fileSize(d.tailleOctets)}</td>
                 <td className="muted">{timestamp(d.createdAt)}</td>
                 <td>

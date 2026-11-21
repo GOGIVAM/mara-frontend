@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { GROUPE_LABELS, classLabel, percent } from '../lib/format.js';
+import { CountUp } from '../lib/motion.js';
 
 /** Tableau de bord : GET /api/kpi/dashboard (ADMIN) + volumétrie du référentiel. */
 export default function Overview() {
@@ -34,17 +35,19 @@ export default function Overview() {
     { key: 'documents', value: referentiel.totalDocuments, label: 'Documents publiés' },
     ...(isAdmin ? [
       { key: 'interventions', value: data?.totalInterventions, label: `Reconnaissances sur ${days} jours` },
-      { key: 'score', value: data ? percent(data.avgScoreConfiance) : undefined, label: 'Score de confiance moyen' },
-      { key: 'fallback', value: data ? percent(data.fallbackQrRate) : undefined, label: 'Taux de repli marqueur QR' },
+      { key: 'score', value: data ? (data.avgScoreConfiance || 0) * 100 : undefined, unit: ' %', label: 'Score de confiance moyen' },
+      { key: 'fallback', value: data ? (data.fallbackQrRate || 0) * 100 : undefined, unit: ' %', label: 'Taux de repli marqueur QR' },
     ] : []),
   ];
 
   return (
     <div className="page">
       <div className="card tiles">
-        {tiles.map(({ key, value, label }) => (
+        {tiles.map(({ key, value, unit, label }) => (
           <div key={key} className="tile">
-            <span className="tile-value">{value ?? '–'}</span>
+            <span className="tile-value">
+              <CountUp value={value} format={(v) => `${Math.round(v).toLocaleString('fr-FR')}${unit || ''}`} />
+            </span>
             <span className="tile-label">{label}</span>
           </div>
         ))}
@@ -72,10 +75,10 @@ export default function Overview() {
                 </div>
               </header>
               {usage.length ? (
-                <div className="bars">
-                  {usage.map((u) => (
+                <div className="bars" key={days}>
+                  {usage.map((u, i) => (
                     <div key={u.date} className="bar" title={`${u.date} : ${u.count} reconnaissance(s)`}>
-                      <span style={{ height: `${(u.count / maxUsage) * 100}%` }} />
+                      <span style={{ height: `${(u.count / maxUsage) * 100}%`, animationDelay: `${i * 35}ms` }} />
                       <small>{String(u.date).slice(5)}</small>
                     </div>
                   ))}
@@ -89,7 +92,7 @@ export default function Overview() {
                 {(data.byGroupe || []).map((g) => (
                   <li key={g.groupe}>
                     <span className="kpi-label">{GROUPE_LABELS[g.groupe] || g.groupe || 'Non renseigné'}</span>
-                    <span className="kpi-value">{g.count}</span>
+                    <span className="kpi-value"><CountUp value={g.count} /></span>
                   </li>
                 ))}
                 {!(data.byGroupe || []).length && <li className="muted">Aucune donnée.</li>}

@@ -102,7 +102,7 @@ export default function Scan() {
           </span>
         </header>
 
-        <div className="viewfinder">
+        <div className={`viewfinder${busy ? ' scanning' : ''}`}>
           <video ref={videoRef} playsInline muted />
           <canvas ref={canvasRef} hidden />
           {!streaming && (
@@ -112,7 +112,7 @@ export default function Scan() {
             </div>
           )}
           {(result?.detections || []).map((d, i) => (
-            <div key={i} className="viewfinder-box" style={boxStyle(d.boundingBox)}>
+            <div key={`${result.sessionId}-${i}`} className="viewfinder-box" style={{ ...boxStyle(d.boundingBox), animationDelay: `${i * 90}ms` }}>
               <span>{classLabel(d.class)} · {percent(d.scoreFinal)}</span>
             </div>
           ))}
@@ -143,7 +143,7 @@ export default function Scan() {
                   <td>{percent(d.scoreDet)}</td>
                   <td>{percent(d.scoreCls)}</td>
                   <td>{percent(d.scoreSmoothed)}</td>
-                  <td>{d.preActivateVuforia ? 'Pré-activé' : ''}</td>
+                  <td>{d.preActivateVuforia ? 'Pré-activé' : '–'}</td>
                 </tr>
               ))}
               {!(result.detections || []).length && (
@@ -158,7 +158,7 @@ export default function Scan() {
         <header className="panel-head"><h3>Résultat</h3></header>
 
         {result && (
-          <div className="detail">
+          <div className="detail swap" key={result.sessionId + (best?.class || '')}>
             <p className="detail-title">
               {best ? classLabel(best.class) : 'Équipement non identifié'}
             </p>

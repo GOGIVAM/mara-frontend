@@ -225,7 +225,7 @@ export default function EssieuT17() {
           {stepMode && (
             <div className="t17-stepbar">
               <div className="progress"><span style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} /></div>
-              <div className={`step step-${SAFETY_CLASS[step.niveauSecurite]} t17-current`}>
+              <div key={stepIndex} className={`step step-${SAFETY_CLASS[step.niveauSecurite]} t17-current`}>
                 <span className="step-order">{String(step.ordre).padStart(2, '0')}</span>
                 <span className="step-body">
                   <strong>{step.description}</strong>
@@ -263,6 +263,7 @@ export default function EssieuT17() {
         </section>
 
         <aside className="card panel">
+          <div className="swap" key={tab === 'jumeau' ? `jumeau-${pointId}` : tab}>
           {tab === 'jumeau' && (
             <>
               <header className="panel-head"><h3>{selected ? `${selected.id} · ${selected.label}` : 'Composition'}</h3></header>
@@ -363,6 +364,7 @@ export default function EssieuT17() {
               </p>
             </>
           )}
+          </div>
         </aside>
       </div>
     </div>

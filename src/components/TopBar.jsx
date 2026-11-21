@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { GROUPE_LABELS } from '../lib/format.js';
@@ -25,6 +25,9 @@ export default function TopBar() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [health, setHealth] = useState(null);
+  const location = useLocation();
+  const navRef = useRef(null);
+  const [indicator, setIndicator] = useState(null);
 
   // État du service de reconnaissance (GET /api/inference/health), rafraîchi chaque minute.
   useEffect(() => {
@@ -33,6 +36,25 @@ export default function TopBar() {
     const id = setInterval(load, 60000);
     return () => clearInterval(id);
   }, []);
+
+  // Position de l'indicateur : recalculée à chaque navigation et au redimensionnement.
+  useLayoutEffect(() => {
+    const el = navRef.current;
+    if (!el) return undefined;
+    const place = () => {
+      const active = el.querySelector('.pill-active');
+      if (!active) { setIndicator(null); return; }
+      setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
+      const { scrollLeft, clientWidth } = el;
+      if (active.offsetLeft < scrollLeft || active.offsetLeft + active.offsetWidth > scrollLeft + clientWidth) {
+        el.scrollTo({ left: active.offsetLeft - 16, behavior: 'smooth' });
+      }
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [location.pathname]);
 
   const nav = (isAdmin ? [...NAV, ...ADMIN_NAV] : NAV).filter((item) => !item.right || can(user?.groupe, item.right));
 
@@ -47,7 +69,10 @@ export default function TopBar() {
         <span className="groupe-chip" title={GROUPE_LABELS[user?.groupe] || ''}>{user?.groupe}</span>
       </div>
 
-      <nav className="pill-nav">
+      <nav className="pill-nav" ref={navRef}>
+        {indicator && (
+          <span className="nav-indicator" style={{ transform: `translateX(${indicator.left}px)`, width: indicator.width }} />
+        )}
         {nav.map((item) => (
           <NavLink key={item.to} to={item.to} end={item.end}
             className={({ isActive }) => `pill${isActive ? ' pill-active' : ''}`}>

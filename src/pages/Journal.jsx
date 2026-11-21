@@ -47,15 +47,15 @@ export default function Journal() {
             {items.map((l) => (
               <tr key={l.id}>
                 <td className="muted">{timestamp(l.debutAt)}</td>
-                <td><span className="badge">{l.userGroupe || ''}</span></td>
-                <td>{l.classeDetectee ? classLabel(l.classeDetectee) : ''}</td>
+                <td>{l.userGroupe ? <span className="badge">{l.userGroupe}</span> : <span className="muted">–</span>}</td>
+                <td>{l.classeDetectee ? classLabel(l.classeDetectee) : <span className="muted">–</span>}</td>
                 <td>
                   <span className={`score${(l.scoreConfiance || 0) >= 0.7 ? ' score-ok' : ''}`}>
-                    {l.scoreConfiance != null ? percent(l.scoreConfiance) : ''}
+                    {l.scoreConfiance != null ? percent(l.scoreConfiance) : '–'}
                   </span>
                 </td>
                 <td>{l.fallbackQr ? 'Oui' : 'Non'}</td>
-                <td className="muted">{l.sessionId || ''}</td>
+                <td className="muted">{l.sessionId || '–'}</td>
                 <td className="muted">{l.finAt ? timestamp(l.finAt) : 'en cours'}</td>
               </tr>
             ))}

@@ -75,7 +75,7 @@ export default function Equipements() {
               {STATUTS.map((s) => <option key={s} value={s}>{STATUT_LABELS[s]}</option>)}
             </select>
             {isAdmin && (
-              <button className="chip chip-active" onClick={() => setForm({ ...EMPTY })}>
+              <button className="btn-add" onClick={() => setForm({ ...EMPTY })}>
                 <Plus size={13} /> Nouveau
               </button>
             )}
@@ -159,13 +159,13 @@ export default function Equipements() {
                 </div>
               )}
             </header>
-            <div className="detail">
+            <div className="detail swap" key={selected.id}>
               <p className="detail-title">{selected.designation}</p>
               <dl>
                 <div><dt>Code</dt><dd>{selected.code}</dd></div>
                 <div><dt>Classe IA</dt><dd>{classLabel(selected.classe)}</dd></div>
                 <div><dt>Direction</dt><dd>{selected.direction}</dd></div>
-                <div><dt>Marqueur Vuforia</dt><dd>{selected.marqueur || ''}</dd></div>
+                <div><dt>Marqueur Vuforia</dt><dd>{selected.marqueur || '–'}</dd></div>
                 <div><dt>Statut</dt><dd>{STATUT_LABELS[selected.statut] || selected.statut}</dd></div>
                 <div><dt>Gammes rattachées</dt><dd>{selected.nbGammes}</dd></div>
                 <div><dt>Documents</dt><dd>{selected.nbDocuments}</dd></div>

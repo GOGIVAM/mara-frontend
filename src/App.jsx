@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import TopBar from './components/TopBar.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import Documents from './pages/Documents.jsx';
@@ -13,15 +13,17 @@ import Users from './pages/Users.jsx';
 
 export default function App() {
   const { user, loading, isAdmin } = useAuth();
+  const location = useLocation();
 
-  if (loading) return <div className="boot">Chargement de la console MA-RA…</div>;
+  if (loading) return <div className="boot"><span className="spinner" />Chargement de la console MA-RA…</div>;
   if (!user) return <Login />;
 
   return (
     <div className="app">
       <TopBar />
       <main className="app-body">
-        <Routes>
+        <div className="route" key={location.pathname}>
+        <Routes location={location}>
           <Route path="/" element={<Overview />} />
           <Route path="/scan" element={<Scan />} />
           <Route path="/equipements" element={<Equipements />} />
@@ -32,6 +34,7 @@ export default function App() {
           <Route path="/utilisateurs" element={isAdmin ? <Users /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </div>
       </main>
     </div>
   );
