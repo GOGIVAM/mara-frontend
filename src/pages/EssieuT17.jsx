@@ -230,7 +230,7 @@ export default function EssieuT17() {
                 <span className="step-body">
                   <strong>{step.description}</strong>
                   <span className="muted">
-                    {SAFETY_LABELS[step.niveauSecurite]} · {fmtDuree(step.duree)}
+                    <span className={`t17-safety-${step.niveauSecurite}`}>{SAFETY_LABELS[step.niveauSecurite]}</span> · {fmtDuree(step.duree)}
                     {selected ? ` · ${selected.label}` : ''}
                   </span>
                   {(tab === 'formation' || step.niveauSecurite !== 'NONE') && step.detail && (
@@ -293,7 +293,7 @@ export default function EssieuT17() {
           {stepMode && (
             <>
               <header className="panel-head"><h3>Étapes</h3><span className="muted">← → pour naviguer</span></header>
-              <ol className="steps">
+              <ol className="steps t17-steps">
                 {STEPS.map((s, i) => (
                   <li key={s.ordre}
                     className={`step step-${SAFETY_CLASS[s.niveauSecurite]}${i === stepIndex ? ' t17-step-active' : ''}`}
@@ -302,7 +302,7 @@ export default function EssieuT17() {
                     <span className="step-body">
                       <strong>{s.description}</strong>
                       <span className="muted">
-                        {SAFETY_LABELS[s.niveauSecurite]} · {fmtDuree(s.duree)}
+                        <span className={`t17-safety-${s.niveauSecurite}`}>{SAFETY_LABELS[s.niveauSecurite]}</span> · {fmtDuree(s.duree)}
                         {fiche.steps[s.ordre] && tab === 'operatoire' ? ' · réalisée' : ''}
                       </span>
                     </span>

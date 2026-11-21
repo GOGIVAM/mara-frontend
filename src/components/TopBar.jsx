@@ -70,7 +70,7 @@ export default function TopBar() {
           <Bell size={19} />
           {health && !health.available && <span className="notif-dot" />}
         </button>
-        <button className="avatar-btn" title={`${user?.userName}  se déconnecter`} onClick={logout}>
+        <button className="avatar-btn" title={`${user?.userName} : se déconnecter`} onClick={logout}>
           <Avatar name={user?.userName || 'MA RA'} size={34} online={user?.isActive} />
         </button>
       </div>

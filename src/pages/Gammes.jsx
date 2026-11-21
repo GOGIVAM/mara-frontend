@@ -161,7 +161,7 @@ export default function Gammes() {
                 <select value={gammeForm.equipementId || ''}
                   onChange={(e) => setGammeForm({ ...gammeForm, equipementId: e.target.value })}>
                   <option value="">Aucun</option>
-                  {equipements.map((e) => <option key={e.id} value={e.id}>{e.code}  {e.designation}</option>)}
+                  {equipements.map((e) => <option key={e.id} value={e.id}>{e.code} · {e.designation}</option>)}
                 </select>
               </label>
               <label className="check">
@@ -191,7 +191,7 @@ export default function Gammes() {
               )}
             </header>
             <div className="detail">
-              <p className="detail-title">{detail.code}  {detail.titre}</p>
+              <p className="detail-title">{detail.code} · {detail.titre}</p>
               <p className="muted">
                 {classLabel(detail.classeEquipement)} · {detail.direction} · v{detail.version}
                 {detail.isActive ? '' : ' · inactive'}
@@ -212,7 +212,7 @@ export default function Gammes() {
                     <input type="number" min={0} max={999} required value={etapeForm.ordreIndex}
                       onChange={(e) => setEtapeForm({ ...etapeForm, ordreIndex: e.target.value })} />
                   </label>
-                  <label>Description (80 caractères max  contrainte RealWear)
+                  <label>Description (80 caractères max, contrainte RealWear)
                     <input required maxLength={80} value={etapeForm.description}
                       onChange={(e) => setEtapeForm({ ...etapeForm, description: e.target.value })} />
                   </label>

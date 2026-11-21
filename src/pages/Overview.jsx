@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { Chart, Cube, Offline, Signal, Wrench } from '../components/Icons.jsx';
 import { GROUPE_LABELS, classLabel, percent } from '../lib/format.js';
 
 /** Tableau de bord : GET /api/kpi/dashboard (ADMIN) + volumétrie du référentiel. */
@@ -30,21 +29,22 @@ export default function Overview() {
   const maxUsage = Math.max(1, ...usage.map((u) => u.count));
 
   const tiles = [
-    { key: 'equipements', value: referentiel.totalEquipements, label: 'Équipements référencés', Icon: Cube, tint: '#FDECEA', color: '#E10600' },
-    { key: 'gammes', value: referentiel.totalGammes, label: 'Gammes actives', Icon: Wrench, tint: '#F1F0F0', color: '#4A4A4D' },
-    { key: 'documents', value: referentiel.totalDocuments, label: 'Documents publiés', Icon: Chart, tint: '#F1F0F0', color: '#4A4A4D' },
-    { key: 'interventions', value: data?.totalInterventions, label: `Reconnaissances sur ${days} j`, Icon: Signal, tint: '#FDECEA', color: '#E10600' },
-    { key: 'score', value: data ? percent(data.avgScoreConfiance) : undefined, label: 'Score de confiance moyen', Icon: Chart, tint: '#F1F0F0', color: '#4A4A4D' },
-    { key: 'fallback', value: data ? percent(data.fallbackQrRate) : undefined, label: 'Taux de repli marqueur QR', Icon: Offline, tint: '#FDECEA', color: '#E10600' },
+    { key: 'equipements', value: referentiel.totalEquipements, label: 'Équipements référencés' },
+    { key: 'gammes', value: referentiel.totalGammes, label: 'Gammes actives' },
+    { key: 'documents', value: referentiel.totalDocuments, label: 'Documents publiés' },
+    ...(isAdmin ? [
+      { key: 'interventions', value: data?.totalInterventions, label: `Reconnaissances sur ${days} jours` },
+      { key: 'score', value: data ? percent(data.avgScoreConfiance) : undefined, label: 'Score de confiance moyen' },
+      { key: 'fallback', value: data ? percent(data.fallbackQrRate) : undefined, label: 'Taux de repli marqueur QR' },
+    ] : []),
   ];
 
   return (
     <div className="page">
-      <div className="tiles">
-        {tiles.map(({ key, value, label, Icon, tint, color }) => (
-          <div key={key} className="card tile">
-            <span className="action-icon" style={{ background: tint, color }}><Icon size={16} /></span>
-            <span className="tile-value">{value ?? ''}</span>
+      <div className="card tiles">
+        {tiles.map(({ key, value, label }) => (
+          <div key={key} className="tile">
+            <span className="tile-value">{value ?? '–'}</span>
             <span className="tile-label">{label}</span>
           </div>
         ))}
@@ -74,7 +74,7 @@ export default function Overview() {
               {usage.length ? (
                 <div className="bars">
                   {usage.map((u) => (
-                    <div key={u.date} className="bar" title={`${u.date}  ${u.count} reconnaissance(s)`}>
+                    <div key={u.date} className="bar" title={`${u.date} : ${u.count} reconnaissance(s)`}>
                       <span style={{ height: `${(u.count / maxUsage) * 100}%` }} />
                       <small>{String(u.date).slice(5)}</small>
                     </div>

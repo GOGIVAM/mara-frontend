@@ -48,7 +48,7 @@ export default function Documents() {
 
   const equipementLabel = (id) => {
     const e = equipements.find((x) => x.id === id);
-    return e ? `${e.code}  ${e.designation}` : '';
+    return e ? `${e.code} · ${e.designation}` : '';
   };
 
   return (
@@ -118,7 +118,7 @@ export default function Documents() {
               <select value={upload.equipementId}
                 onChange={(e) => setUpload({ ...upload, equipementId: e.target.value })}>
                 <option value="">Aucun</option>
-                {equipements.map((e) => <option key={e.id} value={e.id}>{e.code}  {e.designation}</option>)}
+                {equipements.map((e) => <option key={e.id} value={e.id}>{e.code} · {e.designation}</option>)}
               </select>
             </label>
             <label>Description
