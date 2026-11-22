@@ -758,7 +758,10 @@ body { line-height: 1.5; }
 .assistance-cache { display: none; }
 .assistance-videos { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
 .assistance-videos figure { margin: 0; }
-.assistance-videos video { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #111827; border-radius: var(--radius-sm); }
+.assistance-videos video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #111827; border-radius: var(--radius-sm); }
+.video-annotee { position: relative; }
+.calque-direct { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.assistance-aide { margin: 0 0 10px; font-size: 13px; }
 .assistance-videos figcaption { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
 .assistance-reduite { max-width: 420px; }
 .assistance-figee { margin-bottom: 16px; }
