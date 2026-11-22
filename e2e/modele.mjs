@@ -27,6 +27,24 @@ const pixels = (p, rouge = false) => p.evaluate((r) => {
   return n;
 }, rouge);
 
+// Centre des pixels dessinés, en coordonnées de la page.
+const centre = (p) => p.evaluate(() => {
+  const c = document.querySelector('.scene3d canvas');
+  const r = c.getBoundingClientRect();
+  const copie = document.createElement('canvas');
+  copie.width = 300; copie.height = 200;
+  const ctx = copie.getContext('2d');
+  ctx.drawImage(c, 0, 0, 300, 200);
+  const d = ctx.getImageData(0, 0, 300, 200).data;
+  let n = 0; let sx = 0; let sy = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const k = i / 4;
+    n += 1; sx += k % 300; sy += Math.floor(k / 300);
+  }
+  return { x: r.left + (sx / n / 300) * r.width, y: r.top + (sy / n / 200) * r.height };
+});
+
 const args = ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
 if (CAMERA) args.push(`--use-file-for-fake-video-capture=${CAMERA}`);
 const b = await chromium.launch({ executablePath: CHROME, args });
@@ -70,6 +88,23 @@ try {
   await p.waitForTimeout(500);
   ok(await pixels(p) > 500, 'RA : calage appliqué');
   if (OUT) await p.locator('.modele-vue').screenshot({ path: `${OUT}/modele_ra.png` });
+
+  // Déplacement d'une pièce : on glisse depuis le centre du dessin, puis on remet en place.
+  const avant = await centre(p);
+  ok(await p.locator('text=Remettre les pièces en place').isDisabled(), 'RA : bouton de remise en place inactif au départ');
+  await p.mouse.move(avant.x, avant.y);
+  await p.mouse.down();
+  await p.mouse.move(avant.x, avant.y + 90, { steps: 10 });
+  await p.mouse.up();
+  await p.waitForTimeout(400);
+  const deplace = await centre(p);
+  ok(deplace.y - avant.y > 15, `RA : pièce déplacée au doigt (${Math.round(deplace.y - avant.y)} px vers le bas)`);
+  ok(await p.locator('text=Remettre les pièces en place').isEnabled(), 'RA : remise en place proposée');
+  if (OUT) await p.locator('.modele-vue').screenshot({ path: `${OUT}/modele_ra_deplace.png` });
+  await p.click('text=Remettre les pièces en place');
+  await p.waitForTimeout(1500);
+  const remis = await centre(p);
+  ok(Math.abs(remis.y - avant.y) < 4 && Math.abs(remis.x - avant.x) < 4, 'RA : pièces remises en place');
 
   ok(erreurs.length === 0, `aucune erreur de page ${erreurs.join(' ')}`);
 } finally {

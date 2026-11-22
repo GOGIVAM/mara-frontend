@@ -10,8 +10,9 @@ const TEINTES = { fusee: 0xc3cad3, portee_intermediaire: 0xa7b0bb, portee_calage
 /**
  * Vue 3D d'un modèle glTF. Chaque maillage nommé « organe_g » ou « organe_d » devient
  * sélectionnable sous le nom « organe ». Fond transparent en mode RA pour laisser voir la caméra.
+ * Un appui court sélectionne l'organe ; un glissé déplace la pièce dans le plan de l'écran.
  */
-const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparent, onSelection, onCharge }, ref) {
+const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparent, onSelection, onCharge, onDeplace }, ref) {
   const hote = useRef(null);
   const etat = useRef({});
 
@@ -44,7 +45,7 @@ const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparen
           o.geometry.computeVertexNormals();
           o.material?.dispose();
           o.material = new THREE.MeshStandardMaterial({ color: TEINTES[nom] ?? 0x8d97a3, metalness: 0.5, roughness: 0.45 });
-          o.userData = { organe: nom, ecart: 0, xBase: o.position.x };
+          o.userData = { organe: nom, ecart: 0, base: o.position.clone(), decalage: new THREE.Vector3() };
           pieces.push(o);
         });
         racine.add(gltf.scene);
@@ -72,17 +73,52 @@ const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparen
     dimensionner();
 
     const rayon = new THREE.Raycaster();
-    let appui = null;
-    const surAppui = (e) => { appui = [e.clientX, e.clientY]; };
-    const surRelache = (e) => {
-      if (!appui || Math.hypot(e.clientX - appui[0], e.clientY - appui[1]) > 6) return;
+    const viser = (e) => {
       const r = renderer.domElement.getBoundingClientRect();
       rayon.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
-      const touche = rayon.intersectObjects(pieces)[0];
-      etat.current.onSelection?.(touche?.object.userData.organe || null);
     };
-    renderer.domElement.addEventListener('pointerdown', surAppui);
+    // Glissé d'une pièce : plan face à la caméra passant par le point touché.
+    const plan = new THREE.Plane();
+    const point = new THREE.Vector3();
+    let appui = null;
+    const surAppui = (e) => {
+      viser(e);
+      const touche = rayon.intersectObjects(pieces)[0];
+      appui = { x: e.clientX, y: e.clientY, piece: touche?.object, depart: null, glisse: false };
+      if (!touche) return;
+      etat.current.retour = false;
+      controles.enabled = false;
+      plan.setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), touche.point);
+      appui.depart = touche.point.clone();
+      appui.decalage = touche.object.userData.decalage.clone();
+      renderer.domElement.setPointerCapture(e.pointerId);
+    };
+    const surMouvement = (e) => {
+      if (!appui?.piece) return;
+      if (!appui.glisse && Math.hypot(e.clientX - appui.x, e.clientY - appui.y) <= 6) return;
+      appui.glisse = true;
+      viser(e);
+      if (!rayon.ray.intersectPlane(plan, point)) return;
+      // Le déplacement est mesuré dans le repère du parent, qui porte l'échelle de la RA.
+      const parent = appui.piece.parent;
+      const avant = parent.worldToLocal(appui.depart.clone());
+      const apres = parent.worldToLocal(point.clone());
+      appui.piece.userData.decalage.copy(appui.decalage).add(apres.sub(avant));
+    };
+    const surRelache = (e) => {
+      if (!appui) return;
+      const { piece, glisse, x, y } = appui;
+      appui = null;
+      controles.enabled = !etat.current.face;
+      if (glisse) { etat.current.onDeplace?.(true); return; }
+      if (Math.hypot(e.clientX - x, e.clientY - y) > 6) return;
+      etat.current.onSelection?.(piece?.userData.organe || null);
+    };
+    // En capture, pour passer avant la rotation de la vue quand l'appui tombe sur une pièce.
+    renderer.domElement.addEventListener('pointerdown', surAppui, { capture: true });
+    renderer.domElement.addEventListener('pointermove', surMouvement);
     renderer.domElement.addEventListener('pointerup', surRelache);
+    renderer.domElement.addEventListener('pointercancel', surRelache);
 
     const horloge = new THREE.Clock();
     etat.current = { ...etat.current, pieces, racine, camera, controles, renderer, scene, ouverture: 0 };
@@ -93,8 +129,10 @@ const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparen
       s.ouverture += ((s.eclate ? 1 : 0) - s.ouverture) * pas;
       const pouls = 0.32 + 0.22 * Math.sin(performance.now() / 260);
       pieces.forEach((m) => {
-        const { organe: o, ecart, xBase } = m.userData;
-        m.position.x = xBase + ecart * s.ouverture;
+        const { organe: o, ecart, base, decalage } = m.userData;
+        if (s.retour) decalage.multiplyScalar(1 - pas);
+        m.position.copy(base).add(decalage);
+        m.position.x += ecart * s.ouverture;
         const choisi = s.organe === o;
         m.material.emissive.setHex(choisi ? SURBRILLANCE : 0x000000);
         m.material.emissiveIntensity = choisi ? pouls : 0;
@@ -117,7 +155,9 @@ const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparen
     };
   }, [modele]);
 
-  useEffect(() => { Object.assign(etat.current, { organe, eclate, onSelection, onCharge }); }, [organe, eclate, onSelection, onCharge]);
+  useEffect(() => {
+    Object.assign(etat.current, { organe, eclate, onSelection, onCharge, onDeplace });
+  }, [organe, eclate, onSelection, onCharge, onDeplace]);
 
   useImperativeHandle(ref, () => ({
     /** Échelle et position du modèle sur l'image de la caméra. */
@@ -134,6 +174,11 @@ const Scene3D = forwardRef(function Scene3D({ modele, organe, eclate, transparen
       }
       racine.scale.setScalar(echelle);
       racine.position.set(x, y, 0);
+    },
+    /** Ramène toutes les pièces déplacées à leur place, avec une courte animation. */
+    remettreEnPlace: () => {
+      etat.current.retour = true;
+      etat.current.onDeplace?.(false);
     },
     /** RA ancrée au sol, sur les appareils compatibles WebXR/ARCore. */
     lancerWebXR: async (surFin) => {

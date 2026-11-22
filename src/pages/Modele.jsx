@@ -21,6 +21,7 @@ export default function Modele() {
   const [organe, setOrgane] = useState(null);
   const [erreur, setErreur] = useState('');
   const [place, setPlace] = useState({ echelle: 1, x: 0, y: 0 });
+  const [deplace, setDeplace] = useState(false);
   const video = useRef(null);
   const scene = useRef(null);
 
@@ -80,7 +81,8 @@ export default function Modele() {
               <div className={`scene-zone${mode === 'ra' ? ' scene-zone-ra' : ''}`}>
                 {mode === 'ra' && <video ref={video} autoPlay playsInline muted />}
                 <Scene3D ref={scene} modele={MODELE} organe={organe} transparent={mode === 'ra'}
-                  onSelection={setOrgane} onCharge={(ok) => !ok && setErreur("La maquette n'a pas pu être chargée.")} />
+                  onSelection={setOrgane} onDeplace={setDeplace}
+                  onCharge={(ok) => !ok && setErreur("La maquette n'a pas pu être chargée.")} />
               </div>
             )}
         </section>
@@ -115,6 +117,15 @@ export default function Modele() {
                 <a href={meta.url} target="_blank" rel="noreferrer">{meta.source}</a>. Roues et boîtes d'essieu à ajouter d'après leurs plans.
               </p>
             </>
+          )}
+
+          {mode !== 'plan' && (
+            <div className="pieces-deplacement">
+              <p className="muted">Faites glisser une pièce pour la déplacer ; un appui court la sélectionne.</p>
+              <button className="chip" disabled={!deplace} onClick={() => scene.current?.remettreEnPlace()}>
+                Remettre les pièces en place
+              </button>
+            </div>
           )}
 
           {mode === 'ra' && (
