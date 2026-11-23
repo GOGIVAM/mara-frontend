@@ -5,6 +5,8 @@ import { TrainGif } from './components/Animations.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import Assistance from './pages/Assistance.jsx';
+import Compte from './pages/Compte.jsx';
+import Essieu from './pages/Essieu.jsx';
 import Documents from './pages/Documents.jsx';
 import Equipements from './pages/Equipements.jsx';
 import Gammes from './pages/Gammes.jsx';
@@ -42,6 +44,8 @@ export default function App() {
                   <Route path="/intervention" element={<Intervention />} />
                   <Route path="/modele" element={<Suspense fallback={<p className="muted">Chargement de la maquette…</p>}><Modele /></Suspense>} />
                   <Route path="/assistance" element={<Assistance />} />
+                  <Route path="/compte" element={<Compte />} />
+                  <Route path="/essieux/:numero" element={<Essieu />} />
                   <Route path="/scan" element={<Scan />} />
                   <Route path="/equipements" element={<Equipements />} />
                   <Route path="/gammes" element={<Gammes />} />

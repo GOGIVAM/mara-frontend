@@ -52,7 +52,7 @@ async function raw(path, { method = 'GET', body, form, headers = {}, retry = tru
     throw new Error('Session expirée, veuillez vous reconnecter.');
   }
   if (res.status === 403) {
-    const error = new Error("Accès refusé : cette section est réservée au groupe ADMIN.");
+    const error = new Error("Accès refusé : votre groupe n'a pas ce droit.");
     error.forbidden = true;
     throw error;
   }
@@ -89,6 +89,7 @@ export const api = {
   login: (userName, password) => request('/auth/login', { method: 'POST', body: { userName, password } }),
   me: () => request('/auth/me'),
   logout: () => request('/auth/logout', { method: 'POST', body: { refreshToken: getRefreshToken() || '' } }),
+  changerMotDePasse: (ancienMotDePasse, nouveauMotDePasse) => request('/auth/password', { method: 'POST', body: { ancienMotDePasse, nouveauMotDePasse } }),
 
   // ── Comptes (ADMIN) ────────────────────────────────────────────────────
   users: (groupe) => request(`/users${qs({ groupe })}`),
@@ -97,6 +98,7 @@ export const api = {
   setUserActive: (id, isActive) => request(`/users/${id}/active`, { method: 'PATCH', body: isActive }),
   setUserGroupe: (id, groupe) => request(`/users/${id}/groupe`, { method: 'PATCH', body: groupe }),
   deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+  reinitialiserMotDePasse: (id, nouveauMotDePasse) => request(`/users/${id}/password`, { method: 'PUT', body: { nouveauMotDePasse } }),
 
   // ── Équipements ────────────────────────────────────────────────────────
   equipements: (filters) => request(`/equipements${qs(filters)}`),
@@ -117,12 +119,15 @@ export const api = {
   deleteEtape: (gammeId, etapeId) => request(`/gammes/${gammeId}/etapes/${etapeId}`, { method: 'DELETE' }),
 
   validerGamme: (id, body) => request(`/gammes/${id}/valider`, { method: 'POST', body }),
+  dupliquerGamme: (id, code, titre) => request(`/gammes/${id}/dupliquer`, { method: 'POST', body: { code, titre } }),
 
   ticketAssistance: (salle) => request('/assistance/ticket', { method: 'POST', body: { salle } }),
 
   // ── Visites d'essieu ──
   envoyerVisite: (body) => request('/visites', { method: 'POST', body }),
   visites: (filters) => request(`/visites${qs(filters)}`),
+  dossierEssieu: (numero) => request(`/essieux/${encodeURIComponent(numero)}`),
+  deciderEssieu: (numero, body) => request(`/essieux/${encodeURIComponent(numero)}/decisions`, { method: 'POST', body }),
 
   // ── Documents ──────────────────────────────────────────────────────────
   documents: (filters) => request(`/documents${qs(filters)}`),
@@ -148,6 +153,11 @@ export const api = {
     a.remove();
     URL.revokeObjectURL(url);
   },
+
+  // ── Maquettes 2D/3D (catalogue versionné, mêmes droits que les équipements) ──
+  maquettes: () => request('/maquettes'),
+  fichierMaquette: async (chemin) => (await raw(`/maquettes/${chemin}`)).arrayBuffer(),
+  urlMaquette: (chemin) => `${BASE}/maquettes/${chemin}`,
 
   // ── Reconnaissance (proxy FastAPI) ─────────────────────────────────────
   infer: (sessionId, imageBase64) => request('/inference', { method: 'POST', body: { sessionId, imageBase64 } }),

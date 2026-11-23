@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client.js';
+import { lienMaquette } from '../lib/maquettes.js';
+import { equipementDuMarqueur, lireMarqueur } from '../lib/marqueur.js';
+import { signal } from '../lib/son.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import TitreGamme from '../components/TitreGamme.jsx';
 import { Cube, Offline, Sparkle } from '../components/Icons.jsx';
 import { SAFETY_CLASS, classLabel, percent } from '../lib/format.js';
@@ -17,7 +22,9 @@ const libelle = (d) => (d.organe ? ORGANES[d.organe] || d.organe : classLabel(d.
  * englobantes, repli marqueur QR / sélection manuelle si le service est indisponible.
  */
 export default function Scan() {
+  const { estTerrain } = useAuth();
   const videoRef = useRef(null);
+  const [marqueur, setMarqueur] = useState(null);
   const canvasRef = useRef(null);
   const [sessionId] = useState(() => `console-${Math.random().toString(36).slice(2, 10)}`);
   const [streaming, setStreaming] = useState(false);
@@ -28,6 +35,7 @@ export default function Scan() {
   const [equipements, setEquipements] = useState([]);
   const [manualId, setManualId] = useState('');
   const [gammes, setGammes] = useState([]);
+  const [confirme, setConfirme] = useState(false);
 
   useEffect(() => {
     api.equipements({ statut: 'actif' }).then(setEquipements).catch(() => {});
@@ -36,6 +44,30 @@ export default function Scan() {
   }, []);
 
   const best = result?.detections?.[0];
+
+  // Lecture continue des marqueurs QR tant que la caméra est active.
+  useEffect(() => {
+    if (!streaming) return undefined;
+    let actif = true;
+    let dernier = '';
+    const boucle = async () => {
+      while (actif) {
+        const lu = await lireMarqueur(videoRef.current).catch(() => null);
+        if (!actif) break;
+        if (lu && lu.texte !== dernier) {
+          dernier = lu.texte;
+          const eq = equipementDuMarqueur(equipements, lu.texte);
+          setMarqueur({ texte: lu.texte, equipement: eq });
+          if (eq) { setManualId(eq.id); signal('validation'); }
+        }
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    };
+    boucle();
+    return () => { actif = false; };
+  }, [streaming, equipements]);
+  useEffect(() => { setConfirme(false); }, [best]);
+  const choisi = equipements.find((e) => e.id === manualId);
 
   useEffect(() => {
     const classe = best?.class || equipements.find((e) => e.id === manualId)?.classe;
@@ -130,13 +162,24 @@ export default function Scan() {
 
         <div className="scan-actions">
           {streaming
-            ? <button className="primary-btn" onClick={capture} disabled={busy}>
+            ? <button className="primary-btn" onClick={capture} disabled={busy || !estTerrain}
+                title={estTerrain ? undefined : 'Consultation seule pour votre groupe'}>
                 {busy ? 'Analyse en cours, jusqu’à 30 s…' : "Identifier l'équipement"}
               </button>
             : <button className="primary-btn" onClick={startCamera}>Activer la caméra</button>}
           {streaming && <button className="chip" onClick={stopCamera}>Arrêter</button>}
           <span className="muted">Session {sessionId}</span>
         </div>
+
+        {streaming && (
+          <p className="marqueur-etat" role="status">
+            {marqueur
+              ? (marqueur.equipement
+                ? <>Marqueur lu : <strong>{marqueur.texte}</strong> · {marqueur.equipement.code}, {marqueur.equipement.designation}</>
+                : <>Marqueur lu : <strong>{marqueur.texte}</strong> · aucun équipement ne porte ce marqueur</>)
+              : 'Lecture des marqueurs QR active : présentez le marqueur de l’équipement à la caméra.'}
+          </p>
+        )}
 
         {error && <p className="scan-error"><Offline size={15} /> {error}</p>}
 
@@ -181,6 +224,21 @@ export default function Scan() {
           </div>
         )}
 
+        {best && (
+          <div className="fiche-maquette">
+            {best.aConfirmer && !confirme ? (
+              <button className="chip" onClick={() => setConfirme(true)}>
+                Confirmer : {classLabel(best.class)}
+              </button>
+            ) : (
+              <Link className="chip lien-maquette" to={lienMaquette({ classe: best.class, mode: '3d' })}>
+                Ouvrir la maquette : {classLabel(best.class)}
+              </Link>
+            )}
+            <p className="muted">La reconnaissance propose ; le technicien confirme l'équipement avant d'ouvrir la vue.</p>
+          </div>
+        )}
+
         <div className="manual-select">
           <h4>Sélection manuelle (repli)</h4>
           <select value={manualId} onChange={(e) => setManualId(e.target.value)}>
@@ -193,6 +251,11 @@ export default function Scan() {
             <p className="muted">
               Marqueur : {equipements.find((e) => e.id === manualId)?.marqueur || 'non défini'}
             </p>
+          )}
+          {choisi && (
+            <Link className="chip lien-maquette" to={lienMaquette({ code: choisi.code, classe: choisi.classe, mode: '3d' })}>
+              Ouvrir la maquette de {choisi.code}
+            </Link>
           )}
         </div>
 

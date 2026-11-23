@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import api, { clearTokens, getToken, setTokens } from '../api/client.js';
+import { GROUPES_TERRAIN } from '../lib/format.js';
+import { compteCourant, enAttente } from '../lib/offline.js';
 
 const AuthContext = createContext(null);
 const CLE_PROFIL = 'mara.profil';
@@ -35,6 +37,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    // Les visites signées non envoyées restent sur l'appareil et partiront à la prochaine connexion du même compte.
+    const miennes = (await enAttente().catch(() => [])).filter((v) => v.compte === compteCourant());
+    if (miennes.length && !window.confirm(`${miennes.length} visite(s) signée(s) pas encore envoyée(s). Elles restent sur l'appareil et partiront à votre prochaine connexion. Se déconnecter ?`)) return;
     try { await api.logout(); } catch { /* session déjà close */ }
     clearTokens();
     localStorage.removeItem(CLE_PROFIL);
@@ -44,9 +49,10 @@ export function AuthProvider({ children }) {
   // Le backend porte l'habilitation dans le claim « groupe ».
   const isAdmin = user?.groupe === 'ADMIN';
   const inGroupe = (...groupes) => isAdmin || groupes.includes(user?.groupe);
+  const estTerrain = GROUPES_TERRAIN.includes(user?.groupe);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, inGroupe }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, inGroupe, estTerrain }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
+import { lire as direAVoixHaute, signal, taire } from '../lib/son.js';
+import { useCommandesVocales } from '../lib/voix.js';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
+import { STATUTS_ESSIEU } from './Essieu.jsx';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { ChampFichier, Coche, RailProgression } from '../components/Animations.jsx';
 import TitreGamme from '../components/TitreGamme.jsx';
 import { SAFETY_CLASS, SAFETY_LABELS, timestamp } from '../lib/format.js';
 import { ajouterEnvoi, compresserPhoto, garderPhoto, synchroniser } from '../lib/offline.js';
+import { lienMaquette, lireRef } from '../lib/maquettes.js';
 
 const CODE_GAMME = 'GESS-T17-DEMO';
 const CLE_GAMME = 'mara.demo.t17.gamme';
@@ -27,7 +32,7 @@ const nouvelId = () => (crypto.randomUUID ? crypto.randomUUID()
 
 /** Exécution guidée d'une visite d'essieu T17 : démonstration sans valeur technique. */
 export default function Intervention() {
-  const { user } = useAuth();
+  const { user, estTerrain } = useAuth();
   const [gamme, setGamme] = useState(() => lire(CLE_GAMME));
   const [suivi, setSuivi] = useState(() => lire(CLE_SUIVI));
   const [erreur, setErreur] = useState('');
@@ -55,7 +60,7 @@ export default function Intervention() {
 
   useEffect(() => {
     if (!suivi?.essieu) { setHistorique(null); return; }
-    api.visites({ numeroEssieu: suivi.essieu }).then(setHistorique).catch(() => setHistorique(null));
+    api.dossierEssieu(suivi.essieu).then(setHistorique).catch(() => setHistorique(null));
   }, [suivi?.essieu]);
 
   const etapes = useMemo(
@@ -79,6 +84,9 @@ export default function Intervention() {
         <motion.section className="card panel intervention-debut" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <h2>Visite d'un essieu T17</h2>
           <p className="muted"><TitreGamme titre={gamme.titre} /> · version {gamme.version} · {etapes.length} étapes</p>
+          {!estTerrain ? (
+            <p className="demo-banner">Consultation seule : votre groupe consulte les gammes et les visites, sans en enregistrer.</p>
+          ) : (
           <form onSubmit={(e) => {
             e.preventDefault();
             setSuivi({ id: nouvelId(), essieu: numero.trim(), debut: new Date().toISOString(), index: 0, reponses: {} });
@@ -89,13 +97,14 @@ export default function Intervention() {
               onChange={(e) => setNumero(e.target.value)} />
             <button className="primary-btn">Démarrer la visite</button>
           </form>
+          )}
           {recentes.length > 0 && (
             <>
               <h3 className="visites-titre">Dernières visites enregistrées</h3>
               <ul className="visites-liste">
                 {recentes.map((v) => (
                   <li key={v.id}>
-                    <strong>{v.numeroEssieu}</strong>
+                    <Link to={`/essieux/${encodeURIComponent(v.numeroEssieu)}`}><strong>{v.numeroEssieu}</strong></Link>
                     <span className="muted">{timestamp(v.clotureAt)} · {v.signataire}</span>
                     <span className={`resultat resultat-${v.nombreEcarts ? 'ecart' : 'conforme'}`}>
                       {v.nombreEcarts ? `${v.nombreEcarts} écart(s)` : 'Sans écart'}
@@ -109,7 +118,7 @@ export default function Intervention() {
       )}
 
       {suivi && !suivi.cloture && suivi.index < etapes.length && (
-        <Execution key={etapes[suivi.index].id} etapes={etapes} suivi={suivi} setSuivi={setSuivi} historique={historique} />
+        <Execution key={etapes[suivi.index].id} etapes={etapes} suivi={suivi} setSuivi={setSuivi} historique={historique} gamme={gamme} />
       )}
 
       {suivi && (suivi.cloture || suivi.index >= etapes.length) && (
@@ -119,7 +128,7 @@ export default function Intervention() {
   );
 }
 
-function Execution({ etapes, suivi, setSuivi, historique }) {
+function Execution({ etapes, suivi, setSuivi, historique, gamme }) {
   const etape = etapes[suivi.index];
   const existante = suivi.reponses[etape.id] || {};
   const [note, setNote] = useState(existante.note || '');
@@ -130,18 +139,39 @@ function Execution({ etapes, suivi, setSuivi, historique }) {
   const [message, setMessage] = useState('');
 
   const rouge = etape.niveauSecurite === 'ROUGE';
-  const mesureRequise = estMesure(etape);
+  const mesureRequise = estMesure(etape) || etape.limiteMin != null || etape.limiteMax != null;
+  const aLimites = etape.limiteMin != null || etape.limiteMax != null;
+  const unite = etape.unite ? ` ${etape.unite}` : '';
+  const valeurLue = (() => {
+    const m = /-?\d+(?:[.,]\d+)?/.exec((mesure || '').replace(/\s/g, ''));
+    return m ? Number(m[0].replace(',', '.')) : null;
+  })();
+  const horsLimites = aLimites && valeurLue !== null
+    && ((etape.limiteMin != null && valeurLue < etape.limiteMin) || (etape.limiteMax != null && valeurLue > etape.limiteMax));
   const faites = Object.keys(suivi.reponses).length;
+  const texteLu = `Étape ${suivi.index + 1}. ${etape.description}.${rouge ? ' Consigne de sécurité : confirmez-la avant de continuer.' : ''}${mesureRequise ? ' Saisissez la mesure deux fois.' : ''}`;
+
+  useEffect(() => {
+    if (rouge) signal('vigilance');
+    direAVoixHaute(texteLu);
+    return () => taire();
+  }, [etape.id]);
+
+  const refuser = (texte) => { setMessage(texte); signal('vigilance'); direAVoixHaute(texte); };
 
   const enregistrer = (resultat) => {
-    if (rouge && !securite) { setMessage('Confirmez la consigne de sécurité avant de continuer.'); return; }
+    if (rouge && !securite) { refuser('Confirmez la consigne de sécurité avant de continuer.'); return; }
     if (mesureRequise && resultat === 'conforme') {
-      if (!mesure.trim()) { setMessage('Saisissez la valeur mesurée.'); return; }
+      if (!mesure.trim()) { refuser('Saisissez la valeur mesurée.'); return; }
       if (mesure.trim() !== confirmation.trim()) {
-        setMessage('Les deux saisies diffèrent. Mesurez de nouveau.'); return;
+        refuser('Les deux saisies diffèrent. Mesurez de nouveau.'); return;
+      }
+      if (horsLimites) {
+        refuser(`Valeur hors limites : déclarez un écart et décrivez-le.`); return;
       }
     }
-    if (resultat === 'ecart' && !note.trim()) { setMessage("Décrivez l'écart constaté."); return; }
+    if (resultat === 'ecart' && !note.trim()) { refuser("Décrivez l'écart constaté."); return; }
+    signal(resultat === 'ecart' ? 'alerte' : 'validation');
     setSuivi({
       ...suivi,
       index: suivi.index + 1,
@@ -153,6 +183,18 @@ function Execution({ etapes, suivi, setSuivi, historique }) {
     });
   };
 
+  const vocal = useCommandesVocales({
+    conforme: ['conforme', 'étape conforme'],
+    ecart: ['écart', 'ecart', 'doute'],
+    precedente: ['étape précédente', 'précédente', 'retour'],
+    repeter: ['répéter', 'répète', 'relire'],
+  }, (cle) => {
+    if (cle === 'conforme') enregistrer('conforme');
+    else if (cle === 'ecart') enregistrer('ecart');
+    else if (cle === 'precedente' && suivi.index > 0) setSuivi({ ...suivi, index: suivi.index - 1, sens: -1 });
+    else if (cle === 'repeter') direAVoixHaute(texteLu, true);
+  });
+
   return (
     <div className="intervention-grille">
       <aside className="card panel">
@@ -161,10 +203,14 @@ function Execution({ etapes, suivi, setSuivi, historique }) {
         <p className="muted">{faites} sur {etapes.length} étapes</p>
         {historique && (
           <p className="muted">
-            {historique.length
-              ? `${historique.length} visite(s) précédente(s), dernière le ${timestamp(historique[0].clotureAt)}`
+            {historique.visites.length
+              ? `${historique.visites.length} visite(s) précédente(s), dernière le ${timestamp(historique.visites[0].clotureAt)}`
               : 'Aucune visite précédente enregistrée'}
+            {' · '}<Link to={`/essieux/${encodeURIComponent(suivi.essieu)}`}>Dossier de l'essieu</Link>
           </p>
+        )}
+        {(historique?.statut === 'BLOQUE' || historique?.statut === 'HORS_SERVICE') && (
+          <p className="bilan-alerte" role="alert">{STATUTS_ESSIEU[historique.statut].libelle}. Ne pas remettre en service sans décision.</p>
         )}
         <ol className="suivi-etapes">
           {etapes.map((e, i) => {
@@ -193,6 +239,14 @@ function Execution({ etapes, suivi, setSuivi, historique }) {
           </span>
         </div>
         <h2>{etape.description}</h2>
+        {vocal.etat === 'ecoute' && (
+          <p className="muted voix-etat" role="status">Commande vocale à l'écoute{vocal.entendu ? ` · entendu : « ${vocal.entendu} »` : ''}</p>
+        )}
+        {lireRef(etape.arContentRef) && (
+          <Link className="chip lien-maquette" to={lienMaquette({
+            ...lireRef(etape.arContentRef), mode: '3d', gamme: gamme.id, etape: etape.id, retour: 'intervention',
+          })}>Voir la pièce en 3D</Link>
+        )}
 
         {rouge && (
           <label className="confirmation-securite">
@@ -212,7 +266,12 @@ function Execution({ etapes, suivi, setSuivi, historique }) {
               <input id="mesure-2" inputMode="decimal" value={confirmation}
                 onChange={(e) => { setConfirmation(e.target.value); setMessage(''); }} />
             </div>
-            <p className="muted">Limite non renseignée : la comparaison sera activée avec la gamme validée.</p>
+            {aLimites
+              ? <p className={horsLimites ? 'scan-error' : 'muted'}>
+                  Limites validées : {etape.limiteMin != null ? `min ${etape.limiteMin}${unite}` : ''}{etape.limiteMin != null && etape.limiteMax != null ? ' · ' : ''}{etape.limiteMax != null ? `max ${etape.limiteMax}${unite}` : ''}
+                  {horsLimites ? ' : valeur hors limites, à déclarer en écart.' : ''}
+                </p>
+              : <p className="muted">Limite non renseignée : la comparaison sera activée avec la gamme validée.</p>}
           </div>
         )}
 
@@ -336,6 +395,7 @@ function Bilan({ etapes, suivi, setSuivi, operateur, gamme }) {
         ) : (
           <>
             <button className="chip" onClick={() => window.print()}>Imprimer</button>
+            <Link className="chip" to={`/essieux/${encodeURIComponent(suivi.essieu)}`}>Dossier de l'essieu</Link>
             <span className="etape-espace" />
             <button className="primary-btn" onClick={() => setSuivi(null)}>Nouvelle visite</button>
           </>

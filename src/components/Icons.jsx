@@ -7,6 +7,9 @@ const Svg = ({ size = 18, children, ...rest }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>{children}</svg>
 );
 
+export const Personne = (p) => (
+  <Svg {...p}><circle cx="12" cy="8" r="3.6" /><path d="M4.5 20c.8-3.9 3.9-6 7.5-6s6.7 2.1 7.5 6" /></Svg>
+);
 export const Search = (p) => (
   <Svg {...p}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></Svg>
 );

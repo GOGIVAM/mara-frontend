@@ -988,3 +988,116 @@ body { line-height: 1.5; }
   .topbar, .demo-banner, .bilan-actions { display: none; }
   .card { border: 0; box-shadow: none; }
 }
+
+/* ── Catalogue de maquettes : plan 2D, atelier 3D, caméra, RA suivie ── */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.modele-choix { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.modele-choix .filter-select { min-height: 44px; max-width: 360px; }
+.modele-avertissement { margin: 6px 0 0; font-size: 13px; color: #5f3e08; }
+.modele .modele-grille { grid-template-columns: minmax(0, 1fr) 340px; margin-top: 14px; }
+.badge.statut-plan { background: #e3f3ea; color: var(--green); }
+.badge.statut-illustratif { background: #fbf0dc; color: var(--amber); }
+.badge.statut-principe { background: #ece6f6; color: #5b3f8c; }
+.scene-zone { height: min(68vh, 640px); }
+.scene-zone-plan { background: #fff; }
+.modele-vue:fullscreen { display: flex; }
+.modele-vue:fullscreen .scene-zone { height: 100vh; flex: 1; }
+.barre-outils { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.barre-groupe { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: rgba(255, 255, 255, .92); border: 1px solid var(--line); border-radius: 9px; pointer-events: auto; }
+.outil { min-height: 36px; min-width: 36px; padding: 0 9px; border: 0; border-radius: 6px; background: none; color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
+.outil:hover { background: #eef1f4; }
+.outil[aria-pressed="true"], .outil-actif { background: var(--action); color: #fff; }
+.reperes { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.repere { position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #1b2430; background: #fff;
+  color: #1b2430; font-size: 11.5px; font-weight: 700; padding: 0; pointer-events: auto; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+.repere-actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bandeau-approx { position: absolute; top: 8px; left: 8px; right: 8px; margin: 0; padding: 8px 12px; border-radius: 8px;
+  background: rgba(17, 24, 39, .82); color: #fde68a; font-size: 12.5px; font-weight: 600; }
+.plan-cote { position: relative; }
+.plan-bascule { position: absolute; right: 12px; bottom: 12px; background: #fff; }
+.onglets { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.onglet { min-height: 36px; padding: 0 10px; border: 1px solid transparent; border-radius: 7px; background: none; color: var(--ink-2); font-weight: 600; font-size: 13px; }
+.onglet-actif { background: var(--action-soft); border-color: var(--line); color: var(--ink); }
+.modele-message { margin: 0; padding: 8px 10px; border-radius: 8px; background: #eef4fb; color: #1e3a5f; font-size: 13px; }
+.nomenclature { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow: auto; }
+.repere-num { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; border: 1.5px solid currentColor; font-size: 11px; }
+.organe-masque { opacity: .5; text-decoration: line-through; }
+.fiche-piece { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.fiche-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.demontage { display: flex; flex-direction: column; gap: 8px; }
+.demontage h3 { margin: 0; }
+.demontage-avertissement { margin: 0; font-size: 12.5px; }
+.scenario { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; max-height: 260px; overflow: auto; }
+.scenario-faite { color: var(--green); }
+.scenario-faite::marker { content: '✓ '; }
+.scenario-courante { font-weight: 700; color: var(--ink); }
+.scenario-attente { color: var(--muted); }
+.demontage .primary-btn { text-align: left; padding: 8px 14px; }
+.lien { border: 0; background: none; padding: 0 4px; color: var(--action); text-decoration: underline; font-size: inherit; }
+.ecart-pose { margin: 0; font-size: 13px; }
+.reglages { display: flex; flex-direction: column; gap: 6px; }
+.reglages label { font-size: 12.5px; font-weight: 600; }
+.reglages input[type=range] { width: 100%; accent-color: var(--action); }
+.reglages .case, .case { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.sources h3 { font-size: 13.5px; margin: 10px 0 4px; }
+.sources ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.liste-sources a { color: var(--action); text-decoration: underline; }
+.table-cotes { font-size: 12.5px; }
+.liste-hors-ligne { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.liste-hors-ligne li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
+.hl-integre, .hl-presente { color: var(--green); font-weight: 600; }
+.hl-alteree { color: var(--red); font-weight: 600; }
+.hl-absente { color: var(--muted); }
+.hors-ligne { display: flex; flex-direction: column; gap: 8px; }
+.xr-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 12px; pointer-events: none; }
+.xr-panneau, .xr-commandes { pointer-events: auto; max-width: 520px; padding: 14px 16px; background: rgba(255, 255, 255, .96); border: 1px solid var(--line); border-radius: 12px; }
+.xr-panneau h3 { margin: 0 0 6px; }
+.capacites { margin: 0 0 8px; padding-left: 18px; font-size: 13px; }
+.capacites .ok { color: var(--green); }
+.capacites .ko { color: var(--red); }
+.xr-suivi { font-weight: 700; margin: 0; }
+.xr-bon { color: var(--green); }
+.xr-limite { color: var(--amber); }
+.xr-perdu { color: var(--red); }
+.etape-gamme { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 14px; padding: 10px 14px; background: #fff;
+  border: 1px solid var(--line); border-left: 4px solid var(--action); border-radius: var(--radius-sm); }
+.etape-gamme-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.fiche-maquette { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 6px; }
+.fiche-maquette p { margin: 0; }
+.lien-maquette { display: inline-flex; align-items: center; min-height: 40px; }
+@media (max-width: 1100px) { .modele .modele-grille { grid-template-columns: 1fr; } .scene-zone { height: 62vh; } }
+@media (pointer: coarse) { .outil { min-height: 44px; min-width: 44px; } }
+
+/* ── Marqueurs, voix, compte ── */
+.marqueur-etat { margin: 8px 0 0; font-size: 13px; }
+.voix-etat { margin: 4px 0 0; }
+.sidebar-compte { color: inherit; text-decoration: none; border-radius: 8px; }
+.sidebar-compte:hover { background: #f3f4f6; }
+.form-stack label.case { flex-direction: row; align-items: center; text-align: left; }
+@media (max-width: 700px) {
+  .panel { overflow-x: auto; }
+  .scene-zone { height: auto; display: flex; flex-direction: column; }
+  .scene-zone .scene3d { position: relative; height: 52vh; flex: none; }
+  .scene-zone video { height: 52vh; bottom: auto; }
+  .barre-outils { position: static; padding: 6px; background: #fff; border-top: 1px solid var(--line); }
+  .barre-groupe { border: 0; padding: 0; }
+  .outil { min-height: 40px; }
+  .modele-vide { top: 26vh; }
+}
+
+/* ── Dossier d'essieu, limites ── */
+.badge.statut-bloque { background: #fde8e7; color: var(--red); font-weight: 700; }
+.essieu .two-col-wide { margin-top: 14px; }
+.serie { padding: 10px 0 14px; border-bottom: 1px solid var(--line-soft); }
+.serie h4 { margin: 0 0 6px; font-size: 13.5px; }
+.serie svg { width: 100%; height: auto; display: block; }
+.serie p { margin: 4px 0 0; }
+.serie-ligne { fill: none; stroke: #1f2a37; stroke-width: 2; }
+.serie-point { fill: #fff; stroke: #1f2a37; stroke-width: 2; }
+.serie-limite { stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.serie-tendance { stroke: #2563eb; stroke-width: 1.5; stroke-dasharray: 3 4; }
+.serie-texte { font-size: 11px; fill: var(--ink-2); }
+.decision { padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid var(--line-soft); }
+.decision h3 { margin-top: 0; }
+.limites-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.serie-texte-limite { fill: var(--red); font-weight: 600; }

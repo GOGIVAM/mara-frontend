@@ -48,6 +48,13 @@ export default function Users() {
     catch (err) { setFeedback({ error: err.message }); }
   };
 
+  const reinitialiser = async (u) => {
+    const nouveau = window.prompt(`Nouveau mot de passe pour ${u.userName} (8 caractères au moins, dont un chiffre) :`);
+    if (!nouveau) return;
+    try { await api.reinitialiserMotDePasse(u.id, nouveau); setFeedback({ ok: `Mot de passe de ${u.userName} réinitialisé.` }); }
+    catch (err) { setFeedback({ error: err.message }); }
+  };
+
   const deactivate = async (u) => {
     if (!window.confirm(`Désactiver le compte ${u.userName} ? L'historique est conservé.`)) return;
     try { await api.deleteUser(u.id); load(); }
@@ -103,6 +110,7 @@ export default function Users() {
                     <button className="step-check" onClick={() => toggleActive(u)}>
                       {u.isActive ? 'Désactiver' : 'Réactiver'}
                     </button>
+                    <button className="step-check" onClick={() => reinitialiser(u)}>Mot de passe</button>
                     {u.isActive && <button className="step-check" onClick={() => deactivate(u)}>Retirer</button>}
                   </span>
                 </td>

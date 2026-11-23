@@ -1,10 +1,9 @@
 /* Service worker MA-RA : garde l'application disponible sans réseau.
    Les appels /api ne sont jamais mis en cache ici. */
-const CACHE = 'mara-v4';
+const CACHE = 'mara-v5';
 const BASES = [
   '/', '/logo1.png', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png',
   '/gifs/train-scene.gif', '/gifs/train-scene.jpg', '/gifs/train-petit.gif', '/gifs/train-petit.jpg',
-  '/modeles/axe-voie-metrique.glb', '/modeles/axe-voie-metrique.json',
 ];
 
 self.addEventListener('install', (event) => {
@@ -22,7 +21,8 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const cles = await caches.keys();
-    await Promise.all(cles.filter((c) => c !== CACHE).map((c) => caches.delete(c)));
+    // Le cache des maquettes (mara-maquettes-*) est géré par la page : on le garde.
+    await Promise.all(cles.filter((c) => c !== CACHE && !c.startsWith('mara-maquettes')).map((c) => caches.delete(c)));
     await self.clients.claim();
   })());
 });

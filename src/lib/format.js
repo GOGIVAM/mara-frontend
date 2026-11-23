@@ -18,13 +18,17 @@ export const CLASSES = Object.keys(CLASS_LABELS);
 
 export const classLabel = (c) => CLASS_LABELS[c] || c || '';
 
-export const GROUPES = ['DMAT', 'DIF', 'CI', 'CIF', 'ADMIN'];
+export const GROUPES = ['DMAT', 'DIF', 'CI', 'CIF', 'CMSF', 'ADMIN'];
+
+/** Groupes qui enregistrent des visites et des reconnaissances ; CMSF consulte. */
+export const GROUPES_TERRAIN = ['DMAT', 'DIF', 'CI', 'CIF', 'ADMIN'];
 
 export const GROUPE_LABELS = {
   DMAT: 'DMAT · Matériel',
   DIF: 'DIF · Infrastructure',
   CI: 'CI · Coordination',
   CIF: 'CIF · Formation',
+  CMSF: 'CMSF · Sécurité ferroviaire',
   ADMIN: 'Administration',
 };
 

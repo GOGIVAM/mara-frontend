@@ -1,4 +1,4 @@
-// Vérifie le plan 2D, la maquette 3D et la RA de l'axe. Prérequis : API (5080), vite preview (5199).
+// Vérifie le plan coté, l'atelier 3D et la caméra de l'axe EG6 (catalogue). Prérequis : API (5080), vite preview (5199).
 // Usage : node e2e/modele.mjs [dossier de captures]
 import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright-core';
@@ -60,28 +60,32 @@ try {
   await p.click('.login-card button.primary-btn');
   await p.waitForSelector('.side-nav');
 
-  await p.goto(`${U}/modele`);
+  await p.goto(`${U}/modele?actif=axe-eg6`);
   await p.waitForSelector('.plan-axe svg');
   ok(await p.locator('text=1774 mm').count() === 1, 'plan 2D : longueur du plan affichée');
-  ok(await p.locator('.cotes div').count() === 5, 'plan 2D : cinq cotes sourcées');
-  ok((await p.locator('.modele-tete p').textContent()).includes("pas l'essieu T17"), 'avertissement : pas le T17');
+  ok((await p.locator('.modele-avertissement').textContent()).includes("pas l'essieu T17"), 'avertissement : pas le T17');
+  await p.click('role=tab[name="Sources"]');
+  ok(await p.locator('.table-cotes tbody tr').count() === 5, 'plan 2D : cinq cotes sourcées, statut plan');
+  await p.click('role=tab[name="Pièces"]');
   await p.click('.organe >> text=Fusées');
   ok(await p.locator('.plan-axe-zone-active').count() === 2, 'plan 2D : les deux fusées surlignées');
   if (OUT) await p.locator('.modele-vue').screenshot({ path: `${OUT}/modele_plan.png` });
 
-  await p.click('role=tab[name="Maquette 3D"]');
+  await p.click('role=tab[name="Atelier 3D"]');
   await p.waitForSelector('.scene3d canvas');
   await p.waitForTimeout(2500);
   ok(await pixels(p) > 1000, '3D : axe dessiné');
+  await p.click('.organe >> text=Fusées');
   await p.click('.organe >> text=Portées de calage');
   await p.waitForTimeout(600);
   ok(await pixels(p, true) > 30, '3D : organe en surbrillance');
   if (OUT) await p.locator('.modele-vue').screenshot({ path: `${OUT}/modele_3d.png` });
 
-  await p.click('role=tab[name="Réalité augmentée"]');
+  await p.click('role=tab[name="Caméra"]');
   await p.waitForFunction(() => document.querySelector('.scene-zone video')?.currentTime > 0.2, null, { timeout: 15000 });
   await p.waitForTimeout(1500);
   ok(await p.locator('.scene3d-transparente canvas').count() === 1, 'RA : maquette sur la caméra');
+  await p.click('role=tab[name="Réglages"]');
   await p.fill('#ra-echelle', process.env.MARA_ECHELLE || '1.4');
   if (process.env.MARA_X) await p.fill('#ra-x', process.env.MARA_X);
   if (process.env.MARA_Y) await p.fill('#ra-y', process.env.MARA_Y);
@@ -91,7 +95,9 @@ try {
 
   // Déplacement d'une pièce : on glisse depuis le centre du dessin, puis on remet en place.
   const avant = await centre(p);
-  ok(await p.locator('text=Remettre les pièces en place').isDisabled(), 'RA : bouton de remise en place inactif au départ');
+  const remettre = p.locator('text=Remettre les pièces déplacées en place');
+  ok(await remettre.isDisabled(), 'RA : bouton de remise en place inactif au départ');
+  await p.click('.barre-outils >> text=Déplacer une pièce');
   await p.mouse.move(avant.x, avant.y);
   await p.mouse.down();
   await p.mouse.move(avant.x, avant.y + 90, { steps: 10 });
@@ -99,9 +105,9 @@ try {
   await p.waitForTimeout(400);
   const deplace = await centre(p);
   ok(deplace.y - avant.y > 15, `RA : pièce déplacée au doigt (${Math.round(deplace.y - avant.y)} px vers le bas)`);
-  ok(await p.locator('text=Remettre les pièces en place').isEnabled(), 'RA : remise en place proposée');
+  ok(await remettre.isEnabled(), 'RA : remise en place proposée');
   if (OUT) await p.locator('.modele-vue').screenshot({ path: `${OUT}/modele_ra_deplace.png` });
-  await p.click('text=Remettre les pièces en place');
+  await remettre.click();
   await p.waitForTimeout(1500);
   const remis = await centre(p);
   ok(Math.abs(remis.y - avant.y) < 4 && Math.abs(remis.x - avant.x) < 4, 'RA : pièces remises en place');

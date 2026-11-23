@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Plus } from '../components/Icons.jsx';
+import { STATUTS as STATUTS_MAQUETTE, chargerCatalogue, lienMaquette, resoudre } from '../lib/maquettes.js';
 import {
   CLASSES, DIRECTIONS, STATUTS, STATUT_LABELS, classLabel, timestamp,
 } from '../lib/format.js';
@@ -20,6 +22,10 @@ export default function Equipements() {
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const [catalogue, setCatalogue] = useState(null);
+
+  useEffect(() => { chargerCatalogue().then((r) => setCatalogue(r.catalogue)).catch(() => {}); }, []);
+  const maquette = selected && resoudre(catalogue, { code: selected.code, classe: selected.classe });
 
   const load = () => api.equipements(filters).then((list) => {
     setItems(list);
@@ -173,6 +179,20 @@ export default function Equipements() {
                 <div><dt>Mise à jour</dt><dd>{timestamp(selected.updatedAt)}</dd></div>
               </dl>
               {selected.description && <p className="muted">{selected.description}</p>}
+              <div className="fiche-maquette">
+                <h4>Maquette 2D / 3D</h4>
+                {maquette ? (
+                  <>
+                    <p><strong>{maquette.titre}</strong> · version {maquette.version}</p>
+                    <p className="muted">Variante représentée : {maquette.variante}</p>
+                    <p><span className={`badge ${STATUTS_MAQUETTE[maquette.statut]?.classe || ''}`}>{STATUTS_MAQUETTE[maquette.statut]?.libelle}</span>{' '}
+                      <span className="muted">{maquette.statutLibelle}</span></p>
+                    <Link className="primary-btn lien-maquette" to={lienMaquette({ actif: maquette.actif, code: selected.code, mode: 'plan' })}>
+                      Ouvrir la maquette
+                    </Link>
+                  </>
+                ) : <p className="muted">{catalogue ? 'Aucune maquette pour cette classe.' : 'Catalogue des maquettes en cours de chargement.'}</p>}
+              </div>
             </div>
           </>
         ) : <p className="muted">Sélectionnez un équipement.</p>}

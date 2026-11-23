@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Plus } from '../components/Icons.jsx';
 import TitreGamme from '../components/TitreGamme.jsx';
+import { lienMaquette, lireRef } from '../lib/maquettes.js';
 import {
   CLASSES, DIRECTIONS, SAFETY_CLASS, SAFETY_LABELS, SAFETY_LEVELS, classLabel, timestamp,
 } from '../lib/format.js';
 
 const EMPTY_GAMME = { code: '', titre: '', classeEquipement: CLASSES[0], direction: 'DMAT', equipementId: '', isActive: true };
-const EMPTY_ETAPE = { ordreIndex: 1, description: '', niveauSecurite: 'NONE', dureeSecondes: '', arContentRef: '', detail: '' };
+const EMPTY_ETAPE = { ordreIndex: 1, description: '', niveauSecurite: 'NONE', dureeSecondes: '', arContentRef: '', detail: '', limiteMin: '', limiteMax: '', unite: '' };
 
 /** Gammes de maintenance et étapes  /api/gammes (+ /etapes). */
 export default function Gammes() {
@@ -49,6 +51,19 @@ export default function Gammes() {
     } catch (err) { setFeedback({ error: err.message }); }
   };
 
+  const dupliquer = async () => {
+    const code = window.prompt('Code du nouveau scénario (créé en brouillon à partir de cette gamme) :', `${detail.code}-B`);
+    if (!code) return;
+    const titre = window.prompt('Titre du nouveau scénario :', detail.titre.replace(/^\[DÉMO[^\]]*\]\s*/, ''));
+    if (!titre) return;
+    try {
+      const copie = await api.dupliquerGamme(detail.id, code.trim(), titre.trim());
+      setFeedback({ ok: `Scénario ${copie.code} créé en brouillon à partir de ${detail.code}.` });
+      await load();
+      setSelectedId(copie.id);
+    } catch (err) { setFeedback({ error: err.message }); }
+  };
+
   const removeGamme = async () => {
     if (!detail || !window.confirm(`Supprimer la gamme ${detail.code} ?`)) return;
     try { await api.deleteGamme(detail.id); setSelectedId(null); await load(); }
@@ -62,6 +77,9 @@ export default function Gammes() {
       ordreIndex: Number(etapeForm.ordreIndex),
       description: etapeForm.description,
       arContentRef: etapeForm.arContentRef || null,
+      limiteMin: etapeForm.limiteMin === '' || etapeForm.limiteMin == null ? null : Number(String(etapeForm.limiteMin).replace(',', '.')),
+      limiteMax: etapeForm.limiteMax === '' || etapeForm.limiteMax == null ? null : Number(String(etapeForm.limiteMax).replace(',', '.')),
+      unite: etapeForm.unite || null,
       niveauSecurite: etapeForm.niveauSecurite,
       dureeSecondes: etapeForm.dureeSecondes === '' ? null : Number(etapeForm.dureeSecondes),
       detail: etapeForm.detail || null,
@@ -188,6 +206,7 @@ export default function Gammes() {
                     classeEquipement: detail.classeEquipement, direction: detail.direction,
                     equipementId: detail.equipementId || '', isActive: detail.isActive,
                   })}>Modifier</button>
+                  <button className="chip" onClick={dupliquer} title="Créer un nouveau scénario à partir de cette gamme">Utiliser comme modèle</button>
                   <button className="chip" onClick={removeGamme}>Supprimer</button>
                 </div>
               )}
@@ -248,9 +267,21 @@ export default function Gammes() {
                       onChange={(e) => setEtapeForm({ ...etapeForm, dureeSecondes: e.target.value })} />
                   </label>
                   <label>Référence contenu AR
-                    <input maxLength={200} value={etapeForm.arContentRef || ''}
+                    <input maxLength={200} value={etapeForm.arContentRef || ''} placeholder="maquette:pompe-eau-qsk19?piece=roue&vue=eclate"
                       onChange={(e) => setEtapeForm({ ...etapeForm, arContentRef: e.target.value })} />
                   </label>
+                  <div className="limites-form">
+                    <label>Limite min
+                      <input inputMode="decimal" value={etapeForm.limiteMin ?? ''} onChange={(e) => setEtapeForm({ ...etapeForm, limiteMin: e.target.value })} />
+                    </label>
+                    <label>Limite max
+                      <input inputMode="decimal" value={etapeForm.limiteMax ?? ''} onChange={(e) => setEtapeForm({ ...etapeForm, limiteMax: e.target.value })} />
+                    </label>
+                    <label>Unité
+                      <input maxLength={15} value={etapeForm.unite || ''} onChange={(e) => setEtapeForm({ ...etapeForm, unite: e.target.value })} />
+                    </label>
+                  </div>
+                  <p className="muted">Limites tirées de la gamme CAMRAIL validée. Une mesure hors limites devra être déclarée en écart.</p>
                   <label>Détail
                     <textarea rows={2} value={etapeForm.detail || ''}
                       onChange={(e) => setEtapeForm({ ...etapeForm, detail: e.target.value })} />
@@ -271,8 +302,14 @@ export default function Gammes() {
                       <span className="muted">
                         {SAFETY_LABELS[s.niveauSecurite] || s.niveauSecurite}
                         {s.dureeSecondes ? ` · ${Math.round(s.dureeSecondes / 60)} min` : ''}
-                        {s.arContentRef ? ` · ${s.arContentRef}` : ''}
+                        {s.limiteMin != null || s.limiteMax != null ? ` · limites ${s.limiteMin ?? '…'} à ${s.limiteMax ?? '…'}${s.unite ? ` ${s.unite}` : ''}` : ''}
+                        {s.arContentRef && !lireRef(s.arContentRef) ? ` · ${s.arContentRef}` : ''}
                       </span>
+                      {lireRef(s.arContentRef) && (
+                        <Link className="lien-maquette" to={lienMaquette({
+                          ...lireRef(s.arContentRef), mode: '3d', gamme: detail.id, etape: s.id, retour: 'gammes',
+                        })}>Voir la pièce en 3D</Link>
+                      )}
                       {s.detail && <span className="muted">{s.detail}</span>}
                       {isAdmin && (
                         <span className="step-tools">
@@ -280,6 +317,7 @@ export default function Gammes() {
                             id: s.id, ordreIndex: s.ordreIndex, description: s.description,
                             niveauSecurite: s.niveauSecurite, dureeSecondes: s.dureeSecondes ?? '',
                             arContentRef: s.arContentRef || '', detail: s.detail || '',
+                            limiteMin: s.limiteMin ?? '', limiteMax: s.limiteMax ?? '', unite: s.unite || '',
                           })}>Modifier</button>
                           <button className="step-check" onClick={() => removeEtape(s)}>Supprimer</button>
                         </span>

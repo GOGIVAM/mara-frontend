@@ -5,7 +5,7 @@ import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { GROUPE_LABELS } from '../lib/format.js';
 import Avatar from './Avatar.jsx';
-import { Chart, Chat, Clip, Clock, Cube, Gear, Grid, Logo, Signal, Summary, Wrench } from './Icons.jsx';
+import { Chart, Chat, Clip, Clock, Cube, Gear, Grid, Logo, Personne, Signal, Summary, Wrench } from './Icons.jsx';
 import StatutReseau from './StatutReseau.jsx';
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
   { to: '/equipements', label: 'Équipements', Icone: Gear },
   { to: '/gammes', label: 'Gammes', Icone: Summary },
   { to: '/documents', label: 'Documents', Icone: Clip },
+  { to: '/compte', label: 'Mon compte', Icone: Personne },
 ];
 
 const ADMIN_NAV = [
@@ -64,13 +65,13 @@ export default function Sidebar() {
         {service && !service.available && (
           <span className="statut-reseau statut-hors-ligne" role="status"><Chart size={13} /> Reconnaissance indisponible</span>
         )}
-        <div className="sidebar-compte">
+        <NavLink to="/compte" className="sidebar-compte" title="Mon compte, son et voix">
           <Avatar name={user?.userName || 'MA RA'} size={32} online={user?.isActive} />
           <div className="sidebar-identite">
             <strong>{user?.userName}</strong>
             <span title={GROUPE_LABELS[user?.groupe] || ''}>{user?.groupe}</span>
           </div>
-        </div>
+        </NavLink>
         <button className="sidebar-sortie" onClick={logout}>Se déconnecter</button>
       </div>
     </aside>

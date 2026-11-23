@@ -1,6 +1,13 @@
 /**
  * Stockage terrain : les visites clôturées et leurs photos restent dans IndexedDB
  * jusqu'à confirmation du serveur. L'identifiant de visite rend le renvoi sans risque.
+ *
+ * Les visites et les photos sont chiffrées (AES-GCM 256) avec une clé générée sur le
+ * terminal et non exportable : le navigateur la garde, mais aucun script ne peut la lire.
+ * Sans contexte sécurisé (HTTPS ou localhost), le chiffrement n'est pas disponible et
+ * les données restent en clair ; l'écran Mon compte l'indique.
+ *
+ * Chaque visite garde le compte qui l'a signée : elle n'est envoyée qu'avec ce compte.
  */
 import api from '../api/client.js';
 
@@ -9,10 +16,12 @@ export const EVENEMENT = 'mara-envois';
 
 function ouvrir() {
   return new Promise((resolve, reject) => {
-    const r = indexedDB.open(BASE, 1);
+    const r = indexedDB.open(BASE, 2);
     r.onupgradeneeded = () => {
-      r.result.createObjectStore('envois', { keyPath: 'id' });
-      r.result.createObjectStore('photos');
+      const db = r.result;
+      if (!db.objectStoreNames.contains('envois')) db.createObjectStore('envois', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos');
+      if (!db.objectStoreNames.contains('cles')) db.createObjectStore('cles');
     };
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
@@ -31,14 +40,80 @@ async function operation(store, mode, action) {
 
 const signaler = () => window.dispatchEvent(new Event(EVENEMENT));
 
-export const garderPhoto = (cle, dataUrl) => operation('photos', 'readwrite', (s) => s.put(dataUrl, cle));
-const lirePhoto = (cle) => operation('photos', 'readonly', (s) => s.get(cle));
-const oublierPhoto = (cle) => operation('photos', 'readwrite', (s) => s.delete(cle));
+// ── Chiffrement local ──────────────────────────────────────────────────────
+export const chiffrementDisponible = () => Boolean(window.crypto?.subtle) && window.isSecureContext;
 
-export const enAttente = () => operation('envois', 'readonly', (s) => s.getAll());
+let clePromesse = null;
+function cle() {
+  if (!chiffrementDisponible()) return Promise.resolve(null);
+  if (!clePromesse) {
+    clePromesse = (async () => {
+      const existante = await operation('cles', 'readonly', (s) => s.get('principale'));
+      if (existante) return existante;
+      const nouvelle = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+      await operation('cles', 'readwrite', (s) => s.put(nouvelle, 'principale'));
+      return nouvelle;
+    })().catch(() => null);
+  }
+  return clePromesse;
+}
+
+async function chiffrer(valeur) {
+  const k = await cle();
+  if (!k) return { clair: valeur };
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const donnees = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(JSON.stringify(valeur)));
+  return { iv, donnees };
+}
+
+async function dechiffrer(enreg) {
+  if (enreg == null || typeof enreg !== 'object') return enreg;
+  if (enreg.donnees && enreg.iv) {
+    const k = await cle();
+    if (!k) throw new Error('Clé de chiffrement indisponible sur ce terminal.');
+    const clair = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: enreg.iv }, k, enreg.donnees);
+    return JSON.parse(new TextDecoder().decode(clair));
+  }
+  return 'clair' in enreg ? enreg.clair : enreg;           // donnée en clair (anciennes versions)
+}
+
+/** Compte connecté sur ce terminal (dernier profil connu). */
+export function compteCourant() {
+  try { return JSON.parse(localStorage.getItem('mara.profil'))?.userName || null; } catch { return null; }
+}
+
+// ── Photos ─────────────────────────────────────────────────────────────────
+export async function garderPhoto(cleP, dataUrl) {
+  const enreg = await chiffrer(dataUrl);
+  return operation('photos', 'readwrite', (s) => s.put(enreg, cleP));
+}
+const lirePhoto = async (cleP) => dechiffrer(await operation('photos', 'readonly', (s) => s.get(cleP)));
+const oublierPhoto = (cleP) => operation('photos', 'readwrite', (s) => s.delete(cleP));
+
+// ── File d'envoi ───────────────────────────────────────────────────────────
+async function lireEnvois() {
+  const bruts = await operation('envois', 'readonly', (s) => s.getAll());
+  const liste = [];
+  for (const b of bruts) {
+    try {
+      const v = b.chiffre ? await dechiffrer(b.chiffre) : b;
+      liste.push({ ...v, id: b.id, compte: b.compte ?? v.compte ?? null, erreur: b.erreur ?? v.erreur ?? null });
+    } catch { liste.push({ id: b.id, compte: b.compte, illisible: true }); }
+  }
+  return liste;
+}
+
+async function ecrireEnvoi(visite) {
+  const { id, compte, erreur, ...reste } = visite;
+  const chiffre = await chiffrer(reste);
+  await operation('envois', 'readwrite', (s) => s.put({ id, compte: compte ?? null, erreur: erreur ?? null, chiffre }));
+}
+
+/** Visites en attente sur ce terminal (tous comptes). */
+export const enAttente = () => lireEnvois();
 
 export async function ajouterEnvoi(visite) {
-  await operation('envois', 'readwrite', (s) => s.put({ ...visite, erreur: null }));
+  await ecrireEnvoi({ ...visite, compte: visite.compte ?? compteCourant(), erreur: null });
   signaler();
 }
 
@@ -63,15 +138,19 @@ export function compresserPhoto(fichier) {
 
 let enCours = null;
 
-/** Envoie les visites en attente. S'arrête à la première coupure réseau. */
+/** Envoie les visites en attente du compte connecté. S'arrête à la première coupure réseau. */
 export function synchroniser() {
   if (!enCours) enCours = envoyer().finally(() => { enCours = null; signaler(); });
   return enCours;
 }
 
 async function envoyer() {
-  for (const visite of await enAttente()) {
-    const { erreur, ...corps } = visite;
+  const compte = compteCourant();
+  for (const visite of await lireEnvois()) {
+    if (visite.illisible) continue;
+    // Une visite signée par un autre compte attend que ce compte se reconnecte.
+    if (visite.compte && compte && visite.compte !== compte) continue;
+    const { erreur, compte: _c, ...corps } = visite;
     const etapes = await Promise.all(corps.etapes.map(async (e) => {
       const photo = e.photo ? await lirePhoto(`${corps.id}:${e.etapeId}`) : null;
       const { photo: _ignore, ...reste } = e;
@@ -82,7 +161,7 @@ async function envoyer() {
       await api.envoyerVisite({ ...corps, etapes });
     } catch (e) {
       if (e instanceof TypeError) return;     // réseau absent : on réessaiera
-      await operation('envois', 'readwrite', (s) => s.put({ ...visite, erreur: e.message }));
+      await ecrireEnvoi({ ...visite, erreur: e.message });
       continue;
     }
 
